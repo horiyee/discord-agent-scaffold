@@ -29,3 +29,6 @@ uv run bot
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
 | `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |
+| `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch`) |
+
+Web 検索・取得にはネットワーク接続と Anthropic API の認証が必要です。`WebSearch` は追加料金が発生する場合があります。

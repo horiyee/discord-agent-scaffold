@@ -1,6 +1,7 @@
 """Claude agent backed by the Claude Agent SDK (Claude Code runtime)."""
 
 import asyncio
+import os
 from collections import defaultdict
 
 from claude_agent_sdk import (
@@ -14,6 +15,7 @@ from claude_agent_sdk import (
 from bot.agents.base import Agent
 
 DEFAULT_MODEL = "claude-opus-4-6"
+DEFAULT_ALLOWED_TOOLS = ("WebSearch", "WebFetch")
 
 DEFAULT_SYSTEM_PROMPT = (
     "あなたはチャットボットとして動作するアシスタントです。"
@@ -21,10 +23,23 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 
+def parse_allowed_tools() -> list[str]:
+    raw = os.environ.get("BOT_ALLOWED_TOOLS")
+    if raw is None:
+        return list(DEFAULT_ALLOWED_TOOLS)
+    return [tool.strip() for tool in raw.split(",") if tool.strip()]
+
+
 class ClaudeAgent(Agent):
-    def __init__(self, model: str = DEFAULT_MODEL, system_prompt: str = DEFAULT_SYSTEM_PROMPT):
+    def __init__(
+        self,
+        model: str = DEFAULT_MODEL,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
+        allowed_tools: list[str] | None = None,
+    ):
         self._model = model
         self._system_prompt = system_prompt
+        self._allowed_tools = allowed_tools if allowed_tools is not None else parse_allowed_tools()
         # conversation_id -> Claude session_id (resumed on each turn)
         self._sessions: dict[str, str] = {}
         # Serialize turns per conversation so resume doesn't race
@@ -36,6 +51,10 @@ class ClaudeAgent(Agent):
                 model=self._model,
                 system_prompt=self._system_prompt,
                 resume=self._sessions.get(conversation_id),
+                tools=self._allowed_tools,
+                allowed_tools=self._allowed_tools,
+                permission_mode="dontAsk",
+                setting_sources=[],
             )
             parts: list[str] = []
             async for message in query(prompt=prompt, options=options):
@@ -48,4 +67,12 @@ class ClaudeAgent(Agent):
                     if message.is_error:
                         errors = "; ".join(message.errors or ["unknown error"])
                         return f"エラーが発生しました: {errors}"
+                    if message.permission_denials:
+                        denied = ", ".join(
+                            denial.get("tool_name", "unknown")
+                            if isinstance(denial, dict)
+                            else getattr(denial, "tool_name", "unknown")
+                            for denial in message.permission_denials
+                        )
+                        return f"ツールの使用が拒否されました: {denied}"
             return "\n".join(parts)
