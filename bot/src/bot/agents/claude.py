@@ -1,6 +1,7 @@
 """Claude agent backed by the Claude Agent SDK (Claude Code runtime)."""
 
 import asyncio
+import logging
 import os
 from collections import defaultdict
 
@@ -13,6 +14,9 @@ from claude_agent_sdk import (
 )
 
 from bot.agents.base import Agent
+from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-opus-4-6"
 DEFAULT_ALLOWED_TOOLS = ("WebSearch", "WebFetch")
@@ -40,22 +44,36 @@ class ClaudeAgent(Agent):
         self._model = model
         self._system_prompt = system_prompt
         self._allowed_tools = allowed_tools if allowed_tools is not None else parse_allowed_tools()
+        self._mcp_options: dict = agent_options()
+        if self._mcp_options:
+            self._system_prompt += system_prompt_suffix()
+            logger.info("MCP enabled: %s", ", ".join(enabled_servers()))
         # conversation_id -> Claude session_id (resumed on each turn)
         self._sessions: dict[str, str] = {}
         # Serialize turns per conversation so resume doesn't race
         self._locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
+    def _build_options(self, conversation_id: str) -> ClaudeAgentOptions:
+        allowed_tools = list(self._allowed_tools)
+        if mcp_allowed := self._mcp_options.get("allowed_tools"):
+            allowed_tools.extend(mcp_allowed)
+
+        kwargs: dict = {
+            "model": self._model,
+            "system_prompt": self._system_prompt,
+            "resume": self._sessions.get(conversation_id),
+            "tools": self._allowed_tools,
+            "allowed_tools": allowed_tools,
+            "permission_mode": "dontAsk",
+            "setting_sources": [],
+        }
+        if mcp_servers := self._mcp_options.get("mcp_servers"):
+            kwargs["mcp_servers"] = mcp_servers
+        return ClaudeAgentOptions(**kwargs)
+
     async def reply(self, conversation_id: str, prompt: str) -> str:
         async with self._locks[conversation_id]:
-            options = ClaudeAgentOptions(
-                model=self._model,
-                system_prompt=self._system_prompt,
-                resume=self._sessions.get(conversation_id),
-                tools=self._allowed_tools,
-                allowed_tools=self._allowed_tools,
-                permission_mode="dontAsk",
-                setting_sources=[],
-            )
+            options = self._build_options(conversation_id)
             parts: list[str] = []
             async for message in query(prompt=prompt, options=options):
                 if isinstance(message, AssistantMessage):
