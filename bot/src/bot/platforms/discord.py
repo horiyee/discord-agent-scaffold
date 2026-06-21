@@ -78,7 +78,7 @@ class DiscordBot(discord.Client):
         if not self._reply_in_thread:
             return message.channel
 
-        if not isinstance(message.channel, discord.TextChannel):
+        if not isinstance(message.channel, (discord.TextChannel, discord.NewsChannel)):
             return message.channel
 
         thread_name = self._thread_name(message)
@@ -108,10 +108,19 @@ class DiscordBot(discord.Client):
         trigger: discord.Message,
         content: str,
     ) -> None:
+        in_thread = isinstance(reply_channel, discord.Thread)
         for i in range(0, len(content), DISCORD_MESSAGE_LIMIT):
             chunk = content[i : i + DISCORD_MESSAGE_LIMIT]
             if i == 0:
-                # Reply to the mention in-thread (also works when a thread was just created).
-                await trigger.reply(chunk, mention_author=False)
+                if in_thread:
+                    # trigger.channel is still the parent when a thread was just created,
+                    # so reply via the thread with an explicit reference to the mention.
+                    await reply_channel.send(
+                        chunk,
+                        reference=trigger,
+                        mention_author=False,
+                    )
+                else:
+                    await trigger.reply(chunk, mention_author=False)
             else:
                 await reply_channel.send(chunk)
