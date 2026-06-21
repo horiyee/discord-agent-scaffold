@@ -78,7 +78,8 @@ class DiscordBot(discord.Client):
         if not self._reply_in_thread:
             return message.channel
 
-        if not isinstance(message.channel, (discord.TextChannel, discord.NewsChannel)):
+        # TextChannel covers both text and announcement (news) channels in discord.py 2.x.
+        if not isinstance(message.channel, discord.TextChannel):
             return message.channel
 
         thread_name = self._thread_name(message)
