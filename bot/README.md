@@ -38,6 +38,8 @@ Discord から Issue や PR の確認などができます。
 トークンは必要なスコープだけ付与してください(読み取り中心なら `repo` や fine-grained token の Read 権限)。
 MCP サーバーは `npx @modelcontextprotocol/server-github` で起動するため、ホストに Node.js が必要です。
 
+応答前に Discord 上の直近メッセージ（デフォルト 100 件）を `fetch_history` で取得し、エージェントへのプロンプトに含めます。リプライチェーンもコンテキストに含めます。
+
 ## 環境変数
 
 | 変数 | 必須 | 説明 |
@@ -48,5 +50,6 @@ MCP サーバーは `npx @modelcontextprotocol/server-github` で起動するた
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
 | `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |
 | `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch`) |
+| `BOT_DISCORD_HISTORY_LIMIT` | — | 参照する Discord 履歴の件数(デフォルト: `100`、`0` で無効) |
 
 Web 検索・取得にはネットワーク接続と Anthropic API の認証が必要です。`WebSearch` は追加料金が発生する場合があります。

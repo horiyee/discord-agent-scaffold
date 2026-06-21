@@ -6,6 +6,7 @@ import re
 import discord
 
 from bot.agents.base import Agent
+from bot.platforms.discord_history import build_discord_context
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,9 @@ class DiscordBot(discord.Client):
         if not prompt:
             return
 
-        agent_prompt = self._format_user_prompt(message, prompt)
+        history = await build_discord_context(message, bot_user_id=self.user.id)
+        user_prompt = self._format_user_prompt(message, prompt)
+        agent_prompt = f"{history}{user_prompt}" if history else user_prompt
 
         try:
             async with message.channel.typing():
