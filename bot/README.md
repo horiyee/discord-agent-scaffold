@@ -28,3 +28,4 @@ uv run bot
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
+| `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |

@@ -13,6 +13,8 @@ from claude_agent_sdk import (
 
 from bot.agents.base import Agent
 
+DEFAULT_MODEL = "claude-opus-4-6"
+
 DEFAULT_SYSTEM_PROMPT = (
     "あなたはチャットボットとして動作するアシスタントです。"
     "簡潔に、チャットに適した長さで日本語で答えてください。"
@@ -20,7 +22,7 @@ DEFAULT_SYSTEM_PROMPT = (
 
 
 class ClaudeAgent(Agent):
-    def __init__(self, model: str | None = None, system_prompt: str = DEFAULT_SYSTEM_PROMPT):
+    def __init__(self, model: str = DEFAULT_MODEL, system_prompt: str = DEFAULT_SYSTEM_PROMPT):
         self._model = model
         self._system_prompt = system_prompt
         # conversation_id -> Claude session_id (resumed on each turn)
