@@ -103,6 +103,18 @@ class DiscordBot(discord.Client):
         author = message.author.display_name
         return f"[ユーザーのメッセージ]\n{author}: {prompt}"
 
+    def _thread_reply_reference(
+        self, thread: discord.Thread, trigger: discord.Message
+    ) -> discord.MessageReference:
+        # Starter messages live in the parent channel; reference them from the thread
+        # using the thread's channel_id (see Discord API message_reference rules).
+        return discord.MessageReference(
+            message_id=trigger.id,
+            channel_id=thread.id,
+            guild_id=trigger.guild.id if trigger.guild else None,
+            fail_if_not_exists=False,
+        )
+
     async def _send_chunks(
         self,
         reply_channel: discord.abc.Messageable,
@@ -114,11 +126,9 @@ class DiscordBot(discord.Client):
             chunk = content[i : i + DISCORD_MESSAGE_LIMIT]
             if i == 0:
                 if in_thread:
-                    # trigger.channel is still the parent when a thread was just created,
-                    # so reply via the thread with an explicit reference to the mention.
                     await reply_channel.send(
                         chunk,
-                        reference=trigger,
+                        reference=self._thread_reply_reference(reply_channel, trigger),
                         mention_author=False,
                     )
                 else:
