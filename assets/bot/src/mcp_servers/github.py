@@ -9,7 +9,7 @@ MCP_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
 def token() -> str | None:
     """Return a GitHub token from the environment, if configured."""
-    return os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
+    return os.environ.get(MCP_TOKEN_ENV)
 
 
 def options(token_value: str) -> dict:

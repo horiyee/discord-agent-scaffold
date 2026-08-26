@@ -22,7 +22,7 @@ cd bot
 uv sync
 export DISCORD_BOT_TOKEN=...
 # 任意: GitHub 連携を有効にする
-export GITHUB_TOKEN=ghp_...
+export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
 uv run bot
 ```
 
@@ -31,7 +31,7 @@ uv run bot
 
 ## GitHub 連携
 
-`GITHUB_TOKEN`(または `GITHUB_PERSONAL_ACCESS_TOKEN`) を設定すると、`mcp_servers` が
+`GITHUB_PERSONAL_ACCESS_TOKEN` を設定すると、`mcp_servers` が
 [GitHub MCP サーバー](https://github.com/modelcontextprotocol/servers/tree/main/src/github) の設定を渡し、
 Discord から Issue や PR の確認などができます。
 
@@ -55,8 +55,7 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | 変数 | 必須 | 説明 |
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
-| `GITHUB_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | `GITHUB_TOKEN` の別名 |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
 | `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |
 | `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch`) |
