@@ -14,8 +14,8 @@ assets/bot/
     │   ├── __init__.py          # 入口: DISCORD_BOT_TOKEN, BOT_AGENT
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
-    │   │   ├── claude.py        # Claude Agent SDK + ツール + MCP
-    │   │   └── __init__.py      # create_agent / BOT_MODEL
+    │   │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
+    │   │   └── __init__.py      # create_agent
     │   └── platforms/
     │       ├── discord.py       # メンション/DM、スレッド、分割送信
     │       └── discord_history.py
@@ -35,5 +35,5 @@ assets/bot/
 ## 環境変数（詳細は `assets/bot/README.md`）
 
 - 必須: `DISCORD_BOT_TOKEN`
-- 任意: `BOT_MODEL`、`BOT_ALLOWED_TOOLS`、`BOT_DISCORD_HISTORY_LIMIT`、
+- 任意: `BOT_ALLOWED_TOOLS`、`BOT_MAX_TURNS`、`BOT_DISCORD_HISTORY_LIMIT`、
   `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`
