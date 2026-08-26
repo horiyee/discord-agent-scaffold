@@ -16,7 +16,7 @@ from claude_agent_sdk import (
 
 from bot.agents.base import Agent
 from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
-from bot.permissions import admin_user_ids
+from bot.permissions import github_mcp_allowed_user_ids
 from mcp_servers import agent_options, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
@@ -171,10 +171,14 @@ class ClaudeAgent(Agent):
         self._allowed_tools = allowed_tools if allowed_tools is not None else parse_allowed_tools()
         self._max_turns = max_turns if max_turns is not None else parse_max_turns()
         if os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"):
-            logger.info(
-                "GitHub MCP configured; access limited to admin user(s) %s",
-                ", ".join(str(uid) for uid in sorted(admin_user_ids())),
-            )
+            allowed = github_mcp_allowed_user_ids()
+            if allowed is None:
+                logger.info("GitHub MCP configured (available to all users)")
+            else:
+                logger.info(
+                    "GitHub MCP configured; restricted to user id(s) %s",
+                    ", ".join(str(uid) for uid in sorted(allowed)),
+                )
         # conversation_id -> Claude session_id (resumed on each turn)
         self._sessions: dict[str, str] = {}
         # Serialize turns per conversation so resume doesn't race

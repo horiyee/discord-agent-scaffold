@@ -34,7 +34,7 @@ Discord や Claude の配線をゼロから書き直さない。
 | コンテキスト | 直近履歴＋リプライチェーン＋関連スレ。発言者の表示名をプロンプトに含める |
 | Agent | `AgentRouter` + Discord `/model` で Claude / Cursor / Sakana Fugu を切替。認証／利用上限エラーは日本語で返す |
 | ツール | Claude: `WebSearch` / `WebFetch` / `Agent`。Cursor: SDK エージェント。Fugu: `web_search` |
-| MCP | Claude / Cursor 利用時、`GITHUB_PERSONAL_ACCESS_TOKEN` で GitHub MCP（`BOT_ADMIN_USER_IDS` の Admin のみ） |
+| MCP | Claude / Cursor 利用時、`GITHUB_PERSONAL_ACCESS_TOKEN` で GitHub MCP（任意で `BOT_GITHUB_MCP_USER_IDS` により制限） |
 | モデル | `/model` で切替（状態は `.bot-model-state.json`）。Claude はアカウント設定。Cursor / Fugu はプリセットまたは明示指定 |
 
 ## 手順
