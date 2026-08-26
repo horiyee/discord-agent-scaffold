@@ -65,7 +65,7 @@ cp -R assets/bot <destination>/bot
 
 | 場所 | 変更内容 |
 | --- | --- |
-| `src/bot/agents/claude.py` → `DEFAULT_SYSTEM_PROMPT` | ペルソナ＋役割 |
+| `src/bot/agents/prompts.py` → `DEFAULT_SYSTEM_PROMPT` | ペルソナ＋役割 |
 | `src/bot/platforms/discord.py` → `DEFAULT_THREAD_NAME` | 空プロンプト時のスレ名 |
 | `README.md` / `pyproject.toml` | 名前、用途、authors |
 

@@ -8,7 +8,7 @@ from collections import defaultdict
 from openai import APIConnectionError, APIStatusError, AuthenticationError, OpenAI, RateLimitError
 
 from bot.agents.base import Agent
-from bot.agents.claude import DEFAULT_SYSTEM_PROMPT
+from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 

@@ -14,6 +14,7 @@ assets/bot/
     │   ├── __init__.py          # 入口: DISCORD_BOT_TOKEN, BOT_AGENT
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
+    │   │   ├── prompts.py       # 共有システムプロンプト（味付け）
     │   │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
     │   │   ├── cursor.py        # Cursor SDK
     │   │   ├── fugu.py          # Sakana Fugu（OpenAI Responses API）
@@ -30,7 +31,7 @@ assets/bot/
 
 | カスタム（味付け） | 触らない（コア） |
 | --- | --- |
-| `agents/claude.py` の `DEFAULT_SYSTEM_PROMPT` | セッション resume、ロック、ツール/MCP 組み立て |
+| `agents/prompts.py` の `DEFAULT_SYSTEM_PROMPT` | セッション resume、ロック、ツール/MCP 組み立て |
 | `platforms/discord.py` の `DEFAULT_THREAD_NAME` | スレ作成・reply reference、履歴取得 |
 | bot README の説明 / `pyproject` のメタデータ | `mcp_servers` の配線 |
 
