@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 MENTION_RE = re.compile(r"<@!?\d+>")
 MAX_PAGE_SIZE = 100
 DEFAULT_HISTORY_LIMIT = 100
-BOT_AUTHOR_NAME = "Bot"
 
 
 def configured_history_limit() -> int:
@@ -30,7 +29,7 @@ def _should_include(msg: discord.Message, bot_user_id: int) -> bool:
 
 def format_message(msg: discord.Message, bot_user_id: int) -> str:
     content = _message_text(msg)
-    author = BOT_AUTHOR_NAME if msg.author.id == bot_user_id else msg.author.display_name
+    author = "Bot" if msg.author.id == bot_user_id else msg.author.display_name
     if isinstance(msg.channel, discord.Thread):
         return f"[{msg.channel.name}] {author}: {content}"
     return f"{author}: {content}"
