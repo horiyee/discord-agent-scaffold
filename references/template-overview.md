@@ -15,7 +15,8 @@ assets/bot/
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
     │   │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
-    │   │   └── __init__.py      # create_agent
+    │   │   ├── fugu.py          # Sakana Fugu（OpenAI Responses API）
+    │   │   └── __init__.py      # create_agent（claude / fugu）
     │   └── platforms/
     │       ├── discord.py       # メンション/DM、スレッド、分割送信
     │       └── discord_history.py
@@ -35,5 +36,6 @@ assets/bot/
 ## 環境変数（詳細は `assets/bot/README.md`）
 
 - 必須: `DISCORD_BOT_TOKEN`
-- 任意: `BOT_ALLOWED_TOOLS`、`BOT_MAX_TURNS`、`BOT_DISCORD_HISTORY_LIMIT`、
-  `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`
+- 任意: `BOT_AGENT`、`BOT_ALLOWED_TOOLS`、`BOT_MAX_TURNS`、`BOT_DISCORD_HISTORY_LIMIT`、
+  `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`、
+  `SAKANA_API_KEY` / `FUGU_MODEL` / `FUGU_BASE_URL` / `BOT_FUGU_WEB_SEARCH`（Fugu 時）
