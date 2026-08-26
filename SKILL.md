@@ -1,89 +1,87 @@
 ---
 name: discord-agent-scaffold
 description: >-
-  Scaffold a customized Discord AI agent bot from a thick Claude Agent SDK
-  boilerplate (mention/DM triggers, thread replies, channel history context,
-  WebSearch/WebFetch, optional GitHub MCP). Use when creating a new Discord
-  bot, spinning up a Discord AI agent, or customizing a bot persona from this
-  template.
+  Claude Agent SDK ベースの厚い Discord AI agent bot テンプレートから、
+  カスタム bot を scaffold する（メンション/DM、スレッド返信、チャンネル履歴、
+  WebSearch/WebFetch、任意の GitHub MCP）。新規 Discord bot 作成、Discord AI
+  agent の立ち上げ、このテンプレートからのペルソナカスタマイズ時に使う。
 license: MIT
-compatibility: Requires Python 3.14+, uv, Discord bot token, and Claude Code auth or ANTHROPIC_API_KEY. Optional Node.js/npx for GitHub MCP.
+compatibility: Python 3.14+、uv、Discord bot token、Claude Code 認証または ANTHROPIC_API_KEY が必要。GitHub MCP 利用時は Node.js/npx も必要。
 metadata:
   author: horiyee
   version: "0.1"
 ---
 
-# Scaffold a Discord AI agent bot
+# Discord AI agent bot を scaffold する
 
-Copy the thick bot template from [`assets/bot/`](assets/bot/), then apply
-persona/flavor. Do not rewrite the Discord or Claude wiring from scratch.
+[`assets/bot/`](assets/bot/) の厚いテンプレートをコピーし、ペルソナ／味付けを適用する。
+Discord や Claude の配線をゼロから書き直さない。
 
-For design details, see [`references/template-overview.md`](references/template-overview.md).
+設計の詳細は [`references/template-overview.md`](references/template-overview.md) を参照。
 
-## When to use
+## いつ使うか
 
-- User wants a new Discord AI / agent bot
-- User asks to scaffold from `discord-agent-scaffold`
-- User wants a custom persona on top of mention/DM + thread UX
+- 新しい Discord AI / agent bot を作りたいとき
+- `discord-agent-scaffold` から scaffold したいとき
+- メンション／DM＋スレッド UX の上に独自ペルソナを載せたいとき
 
-## What `assets/bot` already includes
+## `assets/bot` に既にあるもの
 
-| Area | Behavior |
+| 領域 | 挙動 |
 | --- | --- |
-| Triggers | Guild `@mention` or DM |
-| Threads | Mention in a text channel creates a thread and replies inside it |
-| Context | Recent history + reply chain; author display name in the prompt |
-| Agent | Claude Agent SDK with per-conversation session resume |
-| Tools | `WebSearch`, `WebFetch` via `BOT_ALLOWED_TOOLS` |
-| MCP | GitHub MCP when `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN` is set |
-| Model | Default `claude-opus-4-6` (`BOT_MODEL` overrides) |
+| トリガー | ギルドの `@mention` または DM |
+| スレッド | テキストチャンネルでのメンションからスレッドを作成し、その中に返信 |
+| コンテキスト | 直近履歴＋リプライチェーン。発言者の表示名をプロンプトに含める |
+| Agent | Claude Agent SDK。会話ごとにセッションを resume |
+| ツール | `BOT_ALLOWED_TOOLS` 経由の `WebSearch` / `WebFetch` |
+| MCP | `GITHUB_TOKEN` または `GITHUB_PERSONAL_ACCESS_TOKEN` 設定時に GitHub MCP |
+| モデル | 既定 `claude-opus-4-6`（`BOT_MODEL` で上書き） |
 
-## Workflow
+## 手順
 
-### 1. Gather flavor
+### 1. 味付けを集める
 
-Collect if missing: bot name, persona/tone, role/domain, default thread name,
-destination path. Optional: model; whether to keep web tools / GitHub MCP.
+足りなければ聞く: bot 名、ペルソナ／口調、役割／ドメイン、既定スレッド名、
+出力先パス。任意: モデル、Web ツール／GitHub MCP を残すか。
 
-### 2. Copy the template
+### 2. テンプレートをコピーする
 
-Copy the entire package (keep it thick):
+パッケージ全体をコピーする（薄くしない）:
 
 ```text
 assets/bot/  →  <destination>/bot/
 ```
 
-Resolve `assets/bot` relative to this skill root (the directory that contains
-this `SKILL.md`).
+`assets/bot` はこの skill ルート（この `SKILL.md` があるディレクトリ）からの相対パス。
 
 ```sh
 cp -R assets/bot <destination>/bot
 ```
 
-Preserve `pyproject.toml`, `uv.lock`, `.python-version`, `src/bot/**`,
-`src/mcp_servers/**`, and the template README.
+`pyproject.toml`、`uv.lock`、`.python-version`、`src/bot/**`、`src/mcp_servers/**`、
+テンプレート README は残す。
 
-### 3. Apply flavor
+### 3. 味付けを適用する
 
-| Location | Change |
+| 場所 | 変更内容 |
 | --- | --- |
-| `src/bot/agents/claude.py` → `DEFAULT_SYSTEM_PROMPT` | Persona + role |
-| `src/bot/platforms/discord.py` → `DEFAULT_THREAD_NAME` | Fallback thread title |
-| `README.md` / `pyproject.toml` | Name, purpose, authors |
+| `src/bot/agents/claude.py` → `DEFAULT_SYSTEM_PROMPT` | ペルソナ＋役割 |
+| `src/bot/platforms/discord.py` → `DEFAULT_THREAD_NAME` | 空プロンプト時のスレ名 |
+| `README.md` / `pyproject.toml` | 名前、用途、authors |
 
-Leave platform modules alone unless fixing a bug.
+バグ修正以外ではプラットフォーム側モジュールを触らない。
 
-### 4. Hand off runbook
+### 4. 起動手順を渡す
 
-1. Discord app: enable **Message Content Intent**
-2. Invite with Send Messages, Create Public Threads, Send Messages in Threads, Read Message History
+1. Discord アプリで **Message Content Intent** を有効化
+2. Send Messages / Create Public Threads / Send Messages in Threads / Read Message History で招待
 3. `cd bot && uv sync`
-4. Export `DISCORD_BOT_TOKEN` (+ Claude auth or `ANTHROPIC_API_KEY`)
+4. `DISCORD_BOT_TOKEN` を export（＋ Claude 認証または `ANTHROPIC_API_KEY`）
 5. `uv run bot`
-6. `@mention` in a guild channel (expect a thread) or DM
+6. ギルドで `@mention`（スレッド作成を期待）または DM
 
-## Anti-patterns
+## やってはいけないこと
 
-- Building a thinner stub instead of copying `assets/bot`
-- Dropping history / MCP / web tools without being asked
-- Committing tokens or secrets
+- `assets/bot` をコピーせず薄いスタブを自作する
+- 頼まれていないのに履歴／MCP／Web ツールを削る
+- トークンやシークレットをコミットする

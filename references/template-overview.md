@@ -1,8 +1,8 @@
-# Template overview
+# テンプレート概要
 
-`assets/bot` is a runnable Discord + Claude Agent SDK package.
+`assets/bot` は実行可能な Discord + Claude Agent SDK パッケージ。
 
-## Layout
+## 構成
 
 ```text
 assets/bot/
@@ -11,29 +11,29 @@ assets/bot/
 ├── README.md
 └── src/
     ├── bot/
-    │   ├── __init__.py          # entry: DISCORD_BOT_TOKEN, BOT_AGENT
+    │   ├── __init__.py          # 入口: DISCORD_BOT_TOKEN, BOT_AGENT
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
-    │   │   ├── claude.py        # Claude Agent SDK + tools + MCP hooks
+    │   │   ├── claude.py        # Claude Agent SDK + ツール + MCP
     │   │   └── __init__.py      # create_agent / BOT_MODEL
     │   └── platforms/
-    │       ├── discord.py       # mention/DM, threads, chunking
+    │       ├── discord.py       # メンション/DM、スレッド、分割送信
     │       └── discord_history.py
     └── mcp_servers/
         ├── __init__.py
-        └── github.py            # optional GitHub MCP
+        └── github.py            # 任意の GitHub MCP
 ```
 
-## Flavor vs core
+## 味付け vs コア
 
-| Customize (flavor) | Keep (core) |
+| カスタム（味付け） | 触らない（コア） |
 | --- | --- |
-| `DEFAULT_SYSTEM_PROMPT` in `agents/claude.py` | Session resume, locks, tool/MCP option building |
-| `DEFAULT_THREAD_NAME` in `platforms/discord.py` | Thread create/reply reference rules, history fetch |
-| Bot README intro / `pyproject` metadata | `mcp_servers` wiring |
+| `agents/claude.py` の `DEFAULT_SYSTEM_PROMPT` | セッション resume、ロック、ツール/MCP 組み立て |
+| `platforms/discord.py` の `DEFAULT_THREAD_NAME` | スレ作成・reply reference、履歴取得 |
+| bot README の説明 / `pyproject` のメタデータ | `mcp_servers` の配線 |
 
-## Env vars (see also `assets/bot/README.md`)
+## 環境変数（詳細は `assets/bot/README.md`）
 
-- Required: `DISCORD_BOT_TOKEN`
-- Optional: `BOT_MODEL`, `BOT_ALLOWED_TOOLS`, `BOT_DISCORD_HISTORY_LIMIT`,
-  `BOT_REPLY_IN_THREAD`, `GITHUB_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN`
+- 必須: `DISCORD_BOT_TOKEN`
+- 任意: `BOT_MODEL`、`BOT_ALLOWED_TOOLS`、`BOT_DISCORD_HISTORY_LIMIT`、
+  `BOT_REPLY_IN_THREAD`、`GITHUB_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN`
