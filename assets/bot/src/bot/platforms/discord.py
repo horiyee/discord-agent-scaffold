@@ -1,4 +1,8 @@
-"""Discord platform adapter: relays mentions/DMs to an Agent."""
+"""Discord platform adapter: relays mentions/DMs to an Agent.
+
+In guild channels the bot only reacts to @mentions. Once a thread exists,
+follow-up messages in that thread do not require a mention.
+"""
 
 import logging
 import os
@@ -39,7 +43,8 @@ class DiscordBot(discord.Client):
         if message.author.bot:
             return
         is_dm = message.guild is None
-        if not is_dm and self.user not in message.mentions:
+        in_thread = isinstance(message.channel, discord.Thread)
+        if not is_dm and not in_thread and self.user not in message.mentions:
             return
 
         prompt = MENTION_RE.sub("", message.content).strip()

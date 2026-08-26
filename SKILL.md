@@ -29,12 +29,12 @@ Discord や Claude の配線をゼロから書き直さない。
 
 | 領域 | 挙動 |
 | --- | --- |
-| トリガー | ギルドの `@mention` または DM |
+| トリガー | ギルドは初回 `@mention`（スレ内はメンション不要）または DM |
 | スレッド | テキストチャンネルでのメンションからスレッドを作成し、その中に返信 |
 | コンテキスト | 直近履歴＋リプライチェーン＋関連スレ。発言者の表示名をプロンプトに含める |
-| Agent | Claude Agent SDK。会話ごとにセッションを resume |
+| Agent | Claude Agent SDK。会話ごとにセッションを resume。認証／利用上限エラーは日本語で返す |
 | ツール | `BOT_ALLOWED_TOOLS` 経由の `WebSearch` / `WebFetch` |
-| MCP | `GITHUB_TOKEN` または `GITHUB_PERSONAL_ACCESS_TOKEN` 設定時に GitHub MCP |
+| MCP | `GITHUB_PERSONAL_ACCESS_TOKEN` 設定時に GitHub MCP |
 | モデル | 既定 `claude-opus-4-6`（`BOT_MODEL` で上書き） |
 
 ## 手順
@@ -78,7 +78,7 @@ cp -R assets/bot <destination>/bot
 3. `cd bot && uv sync`
 4. `DISCORD_BOT_TOKEN` を export（＋ Claude 認証または `ANTHROPIC_API_KEY`）
 5. `uv run bot`
-6. ギルドで `@mention`（スレッド作成を期待）または DM
+6. ギルドで `@mention`（スレッド作成を期待）。以降はそのスレ内ではメンション不要。または DM
 
 ## やってはいけないこと
 

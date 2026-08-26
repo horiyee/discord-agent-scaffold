@@ -22,16 +22,16 @@ cd bot
 uv sync
 export DISCORD_BOT_TOKEN=...
 # 任意: GitHub 連携を有効にする
-export GITHUB_TOKEN=ghp_...
+export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
 uv run bot
 ```
 
-サーバーではボットへのメンション、DM ではそのまま話しかけると応答します。
+サーバーでは初回はボットへのメンションが必要です。スレッドができたあとは、スレッド内ではメンションなしでも応答します。DM ではそのまま話しかけると応答します。
 複数人が同じチャンネルやスレッドで話す場合に備え、発言者の表示名をプロンプトに含めます。
 
 ## GitHub 連携
 
-`GITHUB_TOKEN`(または `GITHUB_PERSONAL_ACCESS_TOKEN`) を設定すると、`mcp_servers` が
+`GITHUB_PERSONAL_ACCESS_TOKEN` を設定すると、`mcp_servers` が
 [GitHub MCP サーバー](https://github.com/modelcontextprotocol/servers/tree/main/src/github) の設定を渡し、
 Discord から Issue や PR の確認などができます。
 
@@ -45,7 +45,8 @@ MCP サーバーは `npx @modelcontextprotocol/server-github` で起動するた
 ### サーバーでの挙動
 
 - **テキストチャンネルでのメンション** — そのメッセージからスレッドを作成し、メンション投稿へのリプライとしてスレッド内に返信します（既にスレッドが付いている場合はそこで継続）
-- **スレッド内でのメンション** — そのメッセージへのリプライとしてスレッド内に返信します
+- **スレッド内のメッセージ** — メンションなしでも応答します（初回のメンションでスレッドができたあとの会話用）
+- **スレッド内でのメンション** — 上記と同様にスレッド内で返信します
 
 Developer Portal で **Create Public Threads** と **Send Messages in Threads** 権限も付与してください。
 
@@ -54,8 +55,7 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | 変数 | 必須 | 説明 |
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
-| `GITHUB_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | `GITHUB_TOKEN` の別名 |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
 | `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |
 | `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch`) |

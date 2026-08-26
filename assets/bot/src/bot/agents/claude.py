@@ -34,6 +34,82 @@ def parse_allowed_tools() -> list[str]:
     return [tool.strip() for tool in raw.split(",") if tool.strip()]
 
 
+_ASSISTANT_ERROR_MESSAGES = {
+    "authentication_failed": (
+        "Claude Code にログインしていません。"
+        "`claude` でログインするか、ANTHROPIC_API_KEY を設定してください。"
+    ),
+    "billing_error": "Anthropic の課金設定に問題があります。",
+    "rate_limit": (
+        "Claude Code の利用上限に達しました。"
+        "リセット時刻を確認して、しばらく待ってから再度お試しください。"
+    ),
+    "invalid_request": "リクエストが無効です。",
+    "server_error": "Anthropic 側でサーバーエラーが発生しました。",
+}
+
+_USAGE_LIMIT_MARKERS = (
+    "session limit",
+    "weekly limit",
+    "usage limit",
+    "rate limit",
+    "rate limited",
+    "hit your limit",
+    "opus limit",
+    "sonnet limit",
+    "credit balance",
+    "limiting requests",
+)
+
+
+def _is_usage_limit_error(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in _USAGE_LIMIT_MARKERS)
+
+
+def _format_result_error(
+    message: ResultMessage,
+    *,
+    assistant_error: str | None = None,
+) -> str:
+    """Build a user-facing error string from a failed ResultMessage."""
+    if message.errors:
+        detail = "; ".join(message.errors)
+    elif message.result:
+        detail = message.result.strip()
+    elif message.api_error_status is not None:
+        detail = f"HTTP {message.api_error_status}"
+    elif assistant_error:
+        detail = _ASSISTANT_ERROR_MESSAGES.get(assistant_error, assistant_error)
+    elif message.subtype and message.subtype != "success":
+        detail = message.subtype
+    else:
+        detail = "unknown error"
+
+    if assistant_error and detail == message.result:
+        translated = _ASSISTANT_ERROR_MESSAGES.get(assistant_error)
+        if translated:
+            detail = translated
+
+    lowered = detail.lower()
+    if message.api_error_status == 429 or _is_usage_limit_error(lowered):
+        if message.result and message.result.strip():
+            detail = f"Claude Code の利用上限に達しました: {message.result.strip()}"
+        else:
+            detail = _ASSISTANT_ERROR_MESSAGES["rate_limit"]
+    elif assistant_error == "rate_limit":
+        detail = _ASSISTANT_ERROR_MESSAGES["rate_limit"]
+    elif "not logged in" in lowered or "please run /login" in lowered:
+        detail = _ASSISTANT_ERROR_MESSAGES["authentication_failed"]
+    elif "invalid api key" in lowered:
+        detail = (
+            "ANTHROPIC_API_KEY が無効です。"
+            "正しい API キーを設定するか、`claude` でログインしてください。"
+        )
+
+    return f"エラーが発生しました: {detail}"
+
+
 class ClaudeAgent(Agent):
     def __init__(
         self,
@@ -75,16 +151,26 @@ class ClaudeAgent(Agent):
         async with self._locks[conversation_id]:
             options = self._build_options(conversation_id)
             parts: list[str] = []
+            assistant_error: str | None = None
             async for message in query(prompt=prompt, options=options):
                 if isinstance(message, AssistantMessage):
+                    if message.error:
+                        assistant_error = message.error
                     for block in message.content:
                         if isinstance(block, TextBlock):
                             parts.append(block.text)
                 elif isinstance(message, ResultMessage):
                     self._sessions[conversation_id] = message.session_id
                     if message.is_error:
-                        errors = "; ".join(message.errors or ["unknown error"])
-                        return f"エラーが発生しました: {errors}"
+                        error_text = _format_result_error(
+                            message, assistant_error=assistant_error
+                        )
+                        logger.error(
+                            "Claude agent error in conversation %s: %s",
+                            conversation_id,
+                            error_text,
+                        )
+                        return error_text
                     if message.permission_denials:
                         denied = ", ".join(
                             denial.get("tool_name", "unknown")

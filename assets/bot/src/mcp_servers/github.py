@@ -4,11 +4,12 @@ import os
 
 SERVER_NAME = "github"
 NPM_PACKAGE = "@modelcontextprotocol/server-github"
+MCP_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
 
 def token() -> str | None:
     """Return a GitHub token from the environment, if configured."""
-    return os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
+    return os.environ.get(MCP_TOKEN_ENV)
 
 
 def options(token_value: str) -> dict:
@@ -18,7 +19,7 @@ def options(token_value: str) -> dict:
             SERVER_NAME: {
                 "command": "npx",
                 "args": ["-y", NPM_PACKAGE],
-                "env": {"GITHUB_TOKEN": token_value},
+                "env": {MCP_TOKEN_ENV: token_value},
             }
         },
         "allowed_tools": [f"mcp__{SERVER_NAME}__*"],
