@@ -2,9 +2,9 @@
 
 Homelab 上で動く、LLM と対話できるチャットボット。
 
-- `bot.agents` — LLM バックエンドの抽象化(現在: Claude / Sakana Fugu)
+- `bot.agents` — LLM バックエンドの抽象化(現在: Claude / Cursor / Sakana Fugu)
 - `bot.platforms` — チャットプラットフォーム(現在: Discord / 将来: Slack など)
-- `mcp_servers` — Claude Agent SDK 向け MCP サーバー設定(`src/mcp_servers`)
+- `mcp_servers` — MCP サーバー設定(`src/mcp_servers`)。Claude / Cursor バックエンドで利用
 
 ## バックエンド
 
@@ -31,12 +31,32 @@ export SAKANA_API_KEY=...
 export FUGU_MODEL=fugu-ultra
 ```
 
+
+### Cursor
+
+[Cursor SDK](https://cursor.com/docs/sdk/python) を使い、Cursor Pro などのサブスク枠内でモデルを利用します。
+`BOT_AGENT=cursor` にすると Cursor のエージェントが応答します。
+
+`BOT_MODEL` を**未設定**にすると、Cursor の既定モデル（Auto 相当）を使います（Auto + Composer プール）。
+特定モデルを使う場合は `BOT_MODEL=composer-2.5` のように指定してください。未設定時は Cloud ランタイム、指定時は Local ランタイムで動作します。
+
+API キーは [Cursor Dashboard → API Keys](https://cursor.com/dashboard) で作成し、`CURSOR_API_KEY` に設定してください。
+SDK の利用量は IDE / Cloud Agents と同じ月次枠から消費され、Usage ダッシュボードの **SDK** タグで確認できます。
+
+```sh
+export BOT_AGENT=cursor
+export CURSOR_API_KEY=...
+# 任意: モデルを明示（未設定なら Auto / default）
+# export BOT_MODEL=composer-2.5
+```
+
 ## 必要なもの
 
 - **Claude 利用時**: ホストで Claude Code の認証が済んでいること(`claude` でログイン済み、または `ANTHROPIC_API_KEY`)
+- **Cursor 利用時**: `CURSOR_API_KEY`（Cursor Dashboard で作成）
 - **Fugu 利用時**: `SAKANA_API_KEY`（console.sakana.ai で作成）
 - Discord Bot Token(Developer Portal で **Message Content Intent** を有効にすること)
-- GitHub 連携を使う場合（Claude のみ）: [Personal Access Token](https://github.com/settings/tokens) と Node.js(`npx` が使えること)
+- GitHub 連携を使う場合（Claude / Cursor）: [Personal Access Token](https://github.com/settings/tokens) と Node.js(`npx` が使えること)
 
 ## 起動
 
@@ -79,7 +99,10 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
-| `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`。`fugu` も指定可) |
+| `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`。`cursor` / `fugu` も指定可) |
+| `CURSOR_API_KEY` | Cursor 利用時 ✅ | Cursor API キー |
+| `BOT_MODEL` | — | Cursor 利用時のモデル ID。未設定なら Auto / default（Cloud ランタイム） |
+| `BOT_CURSOR_CWD` | — | Cursor Local ランタイムの作業ディレクトリ（デフォルト: `bot/.cursor-bot-workspace`） |
 | `SAKANA_API_KEY` | Fugu 利用時 ✅ | Sakana Fugu API キー |
 | `FUGU_BASE_URL` | — | API ベース URL（デフォルト: `https://api.sakana.ai`） |
 | `FUGU_MODEL` | — | Fugu モデル ID（デフォルト: `fugu`。`fugu-ultra` も可） |
@@ -89,4 +112,4 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | `BOT_DISCORD_HISTORY_LIMIT` | — | 参照する Discord 履歴の件数(デフォルト: `100`、`0` で無効) |
 | `BOT_REPLY_IN_THREAD` | — | チャンネルでのメンション時にスレッドを作成するか(デフォルト: `true`) |
 
-Web 検索・取得にはネットワーク接続が必要です。Claude 利用時は Anthropic API の認証も必要です。`WebSearch` は追加料金が発生する場合があります。Fugu 利用時は Sakana の料金体系に従います。
+Web 検索・取得にはネットワーク接続が必要です。Claude 利用時は Anthropic API の認証も必要です。Cursor 利用時は Cursor サブスクの利用枠から消費されます。`WebSearch` は追加料金が発生する場合があります。Fugu 利用時は Sakana の料金体系に従います。

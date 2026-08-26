@@ -13,7 +13,7 @@ def enabled_servers() -> list[str]:
 
 
 def agent_options() -> dict:
-    """Return ClaudeAgentOptions kwargs for all enabled MCP servers."""
+    """Return MCP server kwargs for all enabled backends (Claude / Cursor)."""
     mcp_servers: dict = {}
     allowed_tools: list[str] = []
 

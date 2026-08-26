@@ -1,12 +1,12 @@
 ---
 name: discord-agent-scaffold
 description: >-
-  Claude Agent SDK / Sakana Fugu ベースの厚い Discord AI agent bot テンプレートから、
+  Claude / Cursor / Sakana Fugu ベースの厚い Discord AI agent bot テンプレートから、
   カスタム bot を scaffold する（メンション/DM、スレッド返信、チャンネル履歴、
   WebSearch/WebFetch、任意の GitHub MCP）。新規 Discord bot 作成、Discord AI
   agent の立ち上げ、このテンプレートからのペルソナカスタマイズ時に使う。
 license: MIT
-compatibility: Python 3.14+、uv、Discord bot token。Claude 利用時は Claude Code 認証または ANTHROPIC_API_KEY。Fugu 利用時は SAKANA_API_KEY。GitHub MCP 利用時は Node.js/npx。
+compatibility: Python 3.14+、uv、Discord bot token。Claude 利用時は Claude Code 認証または ANTHROPIC_API_KEY。Cursor 利用時は CURSOR_API_KEY。Fugu 利用時は SAKANA_API_KEY。GitHub MCP 利用時は Node.js/npx。
 metadata:
   author: horiyee
   version: "0.1"
@@ -32,10 +32,10 @@ Discord や Claude の配線をゼロから書き直さない。
 | トリガー | ギルドは初回 `@mention`（スレ内はメンション不要）または DM |
 | スレッド | テキストチャンネルでのメンションからスレッドを作成し、その中に返信 |
 | コンテキスト | 直近履歴＋リプライチェーン＋関連スレ。発言者の表示名をプロンプトに含める |
-| Agent | `BOT_AGENT` で Claude（サブエージェントあり）または Sakana Fugu。認証／利用上限エラーは日本語で返す |
-| ツール | Claude: `WebSearch` / `WebFetch` / `Agent`（`BOT_MAX_TURNS`）。Fugu: 組み込み `web_search` |
-| MCP | Claude 利用時、`GITHUB_PERSONAL_ACCESS_TOKEN` 設定で GitHub MCP |
-| モデル | Claude はアカウント設定。Fugu は `FUGU_MODEL`（既定 `fugu`） |
+| Agent | `BOT_AGENT` で Claude / Cursor / Sakana Fugu。認証／利用上限エラーは日本語で返す |
+| ツール | Claude: `WebSearch` / `WebFetch` / `Agent`。Cursor: SDK エージェント。Fugu: `web_search` |
+| MCP | Claude / Cursor 利用時、`GITHUB_PERSONAL_ACCESS_TOKEN` で GitHub MCP |
+| モデル | Claude はアカウント設定。Cursor は `BOT_MODEL`（未設定なら Auto）。Fugu は `FUGU_MODEL` |
 
 ## 手順
 
