@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from cursor_sdk import (
+    AgentOptions,
     AsyncClient,
     AuthenticationError,
     CloudAgentOptions,
@@ -23,6 +24,7 @@ from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
 logger = logging.getLogger(__name__)
 
 DEFAULT_CWD = Path(__file__).resolve().parents[3] / ".cursor-bot-workspace"
+DEFAULT_MODEL = "default"
 _SYSTEM_PREAMBLE = "[システム指示]\n"
 
 
@@ -94,28 +96,34 @@ class CursorAgent(Agent):
                 )
             return self._client
 
-    def _build_create_kwargs(self, conversation_id: str) -> dict:
-        kwargs: dict = {
-            "api_key": self._api_key,
-            "name": f"discord-{conversation_id[:32]}",
-        }
-        if mcp_servers := self._mcp_options.get("mcp_servers"):
-            kwargs["mcp_servers"] = mcp_servers
+    def _build_create_options(self, conversation_id: str) -> AgentOptions:
+        mcp_servers = self._mcp_options.get("mcp_servers")
         if self._model is None:
-            kwargs["cloud"] = CloudAgentOptions()
-        else:
-            kwargs["model"] = self._model
-            kwargs["local"] = LocalAgentOptions(
+            return AgentOptions(
+                api_key=self._api_key,
+                name=f"discord-{conversation_id[:32]}",
+                model=DEFAULT_MODEL,
+                cloud=CloudAgentOptions(),
+                mcp_servers=mcp_servers,
+            )
+        return AgentOptions(
+            api_key=self._api_key,
+            name=f"discord-{conversation_id[:32]}",
+            model=self._model,
+            local=LocalAgentOptions(
                 cwd=parse_cursor_cwd(),
                 setting_sources=[],
-            )
-        return kwargs
+            ),
+            mcp_servers=mcp_servers,
+        )
 
     async def _get_or_create_agent(self, conversation_id: str) -> AsyncAgent:
         if conversation_id in self._agents:
             return self._agents[conversation_id]
         client = await self._ensure_client()
-        agent = await client.agents.create(**self._build_create_kwargs(conversation_id))
+        agent = await client.agents.create(
+            self._build_create_options(conversation_id),
+        )
         self._agents[conversation_id] = agent
         return agent
 
