@@ -32,7 +32,7 @@ Discord や Claude の配線をゼロから書き直さない。
 | トリガー | ギルドの `@mention` または DM |
 | スレッド | テキストチャンネルでのメンションからスレッドを作成し、その中に返信 |
 | コンテキスト | 直近履歴＋リプライチェーン＋関連スレ。発言者の表示名をプロンプトに含める |
-| Agent | Claude Agent SDK。会話ごとにセッションを resume |
+| Agent | Claude Agent SDK。会話ごとにセッションを resume。認証／利用上限エラーは日本語で返す |
 | ツール | `BOT_ALLOWED_TOOLS` 経由の `WebSearch` / `WebFetch` |
 | MCP | `GITHUB_TOKEN` または `GITHUB_PERSONAL_ACCESS_TOKEN` 設定時に GitHub MCP |
 | モデル | 既定 `claude-opus-4-6`（`BOT_MODEL` で上書き） |
