@@ -18,7 +18,7 @@ from cursor_sdk import (
 from cursor_sdk.asyncio import AsyncAgent, AsyncRun
 
 from bot.agents.base import Agent
-from bot.agents.claude import DEFAULT_SYSTEM_PROMPT
+from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
 from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
