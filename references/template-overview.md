@@ -15,8 +15,9 @@ assets/bot/
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
     │   │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
+    │   │   ├── cursor.py        # Cursor SDK
     │   │   ├── fugu.py          # Sakana Fugu（OpenAI Responses API）
-    │   │   └── __init__.py      # create_agent（claude / fugu）
+    │   │   └── __init__.py      # create_agent（claude / cursor / fugu）
     │   └── platforms/
     │       ├── discord.py       # メンション/DM、スレッド、分割送信
     │       └── discord_history.py
@@ -38,4 +39,5 @@ assets/bot/
 - 必須: `DISCORD_BOT_TOKEN`
 - 任意: `BOT_AGENT`、`BOT_ALLOWED_TOOLS`、`BOT_MAX_TURNS`、`BOT_DISCORD_HISTORY_LIMIT`、
   `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`、
+  `CURSOR_API_KEY` / `BOT_MODEL` / `BOT_CURSOR_CWD`（Cursor 時）、
   `SAKANA_API_KEY` / `FUGU_MODEL` / `FUGU_BASE_URL` / `BOT_FUGU_WEB_SEARCH`（Fugu 時）

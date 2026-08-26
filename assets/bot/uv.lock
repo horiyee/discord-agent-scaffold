@@ -157,6 +157,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "claude-agent-sdk" },
+    { name = "cursor-sdk" },
     { name = "discord-py" },
     { name = "openai" },
 ]
@@ -164,6 +165,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "claude-agent-sdk", specifier = "==0.2.99" },
+    { name = "cursor-sdk", specifier = "==0.1.8" },
     { name = "discord-py", specifier = "==2.7.1" },
     { name = "openai", specifier = "==2.43.0" },
 ]
@@ -297,6 +299,22 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6c/a0/db537264e234f7273a73ec020873d6d6b39dfd8a53db78b550ca8320440e/cryptography-49.0.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:67e1d20ad9ef3a563c59ef22e7a8a0b8210bd26604369ea4a30a7c66aefe504e", size = 4834820, upload-time = "2026-06-12T20:01:51.847Z" },
     { url = "https://files.pythonhosted.org/packages/93/77/8df9eb486495979bccecd1062e2eaf435250e84437040295b57d09048b0b/cryptography-49.0.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:42b0684e0e40cf26122427802486f6d93aea593612603a94fbf260c7eb1e9c1b", size = 4967968, upload-time = "2026-06-12T20:02:12.524Z" },
     { url = "https://files.pythonhosted.org/packages/c2/e6/f60198ea8d9dfa15fff9ed4ca02ce362f6eadd9ba757dcc50634c4257b63/cryptography-49.0.0-cp39-abi3-win_amd64.whl", hash = "sha256:026ac7423e6fa66872d3bf889be5974507da3944f866f704fa200eadacd00001", size = 3785547, upload-time = "2026-06-12T20:02:26.847Z" },
+]
+
+[[package]]
+name = "cursor-sdk"
+version = "0.1.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d6/23/22aa3ef2f4eef082b145fe1d151e28f23f0d93f0f33051106584d1812e67/cursor_sdk-0.1.8.tar.gz", hash = "sha256:4e3ab986f3cbf9d98e7013a8a30299c077ff423b58c772a40be10222e1b3b898", size = 1175, upload-time = "2026-06-19T17:48:44.135Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/9f/6599a3c6f115a6e4de990e892f6b74827d4151f2ebaffd44246dacabf048/cursor_sdk-0.1.8-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b2cf8b54690421076fc9664f86f76fbb6b0403445a1ca540181129f32bc433e5", size = 47899658, upload-time = "2026-06-19T17:48:30.028Z" },
+    { url = "https://files.pythonhosted.org/packages/63/ea/b54c7b9d28fa0c348c161fdfbfb60a52fc07f3032827672e2c575f73e922/cursor_sdk-0.1.8-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:cbde715958d79f3c71c1ee107819d9f65bd6c8134f1f10b1b7ce4cbdb87486f6", size = 49396854, upload-time = "2026-06-19T17:48:32.915Z" },
+    { url = "https://files.pythonhosted.org/packages/78/d5/01629a189d388c2858fed1381207c7b9adeedcafc59889aba230742de677/cursor_sdk-0.1.8-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:2d2b95148c19b52a5f30ba5f0632f2b0ed94fc9cd7c4f9e86472eb90939d2b3e", size = 56466607, upload-time = "2026-06-19T17:48:35.925Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/03/3c3d336d4397b094630a43482e18a22ab66ffb142fb29c6392af0c060844/cursor_sdk-0.1.8-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:df9d91aa17418f8a6f9dbdfd074e00b867c2491addb281c2dd3720cfce4d972a", size = 57115365, upload-time = "2026-06-19T17:48:39.075Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/18/eaaeba4558653e3d743b5736c726e749d935ba5c97b68c4471194427f0d2/cursor_sdk-0.1.8-py3-none-win_amd64.whl", hash = "sha256:b33be04b2106ebc5697413d33ddca22a317a7efc79227a8eb09065fea1e0f031", size = 43888685, upload-time = "2026-06-19T17:48:41.95Z" },
 ]
 
 [[package]]
