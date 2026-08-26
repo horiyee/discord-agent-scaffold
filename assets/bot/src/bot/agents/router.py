@@ -31,8 +31,16 @@ class AgentRouter(Agent):
         logger.info("initialized agent backend %s", selection.label())
         return agent
 
-    async def reply(self, conversation_id: str, prompt: str) -> str:
+    async def reply(
+        self,
+        conversation_id: str,
+        prompt: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> str:
         selection = self._store.get(conversation_id)
         agent = self._get_agent(selection)
         scoped_id = self._store.scoped_conversation_id(conversation_id, selection)
-        return await agent.reply(scoped_id, prompt)
+        return await agent.reply(
+            scoped_id, prompt, discord_user_id=discord_user_id
+        )

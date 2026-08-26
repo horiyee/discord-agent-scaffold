@@ -110,7 +110,13 @@ class FuguAgent(Agent):
             kwargs["tools"] = [{"type": "web_search"}]
         return kwargs
 
-    async def reply(self, conversation_id: str, prompt: str) -> str:
+    async def reply(
+        self,
+        conversation_id: str,
+        prompt: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> str:
         async with self._locks[conversation_id]:
             kwargs = self._build_request_kwargs(prompt)
             try:

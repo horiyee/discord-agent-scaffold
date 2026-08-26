@@ -19,7 +19,8 @@ from cursor_sdk.asyncio import AsyncAgent, AsyncRun
 
 from bot.agents.base import Agent
 from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
-from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
+from bot.permissions import admin_user_ids
+from mcp_servers import agent_options, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +79,15 @@ class CursorAgent(Agent):
         self._system_prompt = system_prompt
         self._model = model if model is not None else parse_cursor_model()
         self._api_key = api_key if api_key is not None else parse_cursor_api_key()
-        self._mcp_options: dict = agent_options()
-        if self._mcp_options:
-            self._system_prompt += system_prompt_suffix()
-            logger.info("MCP enabled: %s", ", ".join(enabled_servers()))
+        if os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"):
+            logger.info(
+                "GitHub MCP configured; access limited to admin user(s) %s",
+                ", ".join(str(uid) for uid in sorted(admin_user_ids())),
+            )
         self._client: AsyncClient | None = None
         self._client_lock = asyncio.Lock()
         self._agents: dict[str, AsyncAgent] = {}
+        self._agent_has_mcp: dict[str, bool] = {}
         self._system_sent: dict[str, bool] = defaultdict(bool)
         self._locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
@@ -96,8 +99,13 @@ class CursorAgent(Agent):
                 )
             return self._client
 
-    def _build_create_options(self, conversation_id: str) -> AgentOptions:
-        mcp_servers = self._mcp_options.get("mcp_servers")
+    def _build_create_options(
+        self,
+        conversation_id: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> AgentOptions:
+        mcp_servers = agent_options(discord_user_id=discord_user_id).get("mcp_servers")
         if self._model is None:
             return AgentOptions(
                 api_key=self._api_key,
@@ -117,21 +125,47 @@ class CursorAgent(Agent):
             mcp_servers=mcp_servers,
         )
 
-    async def _get_or_create_agent(self, conversation_id: str) -> AsyncAgent:
+    async def _get_or_create_agent(
+        self,
+        conversation_id: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> AsyncAgent:
+        has_mcp = bool(agent_options(discord_user_id=discord_user_id).get("mcp_servers"))
         if conversation_id in self._agents:
-            return self._agents[conversation_id]
+            if self._agent_has_mcp.get(conversation_id) == has_mcp:
+                return self._agents[conversation_id]
+            del self._agents[conversation_id]
+            self._agent_has_mcp.pop(conversation_id, None)
+            self._system_sent.pop(conversation_id, None)
+
         client = await self._ensure_client()
         agent = await client.agents.create(
-            self._build_create_options(conversation_id),
+            self._build_create_options(conversation_id, discord_user_id=discord_user_id),
         )
         self._agents[conversation_id] = agent
+        self._agent_has_mcp[conversation_id] = has_mcp
         return agent
 
-    def _format_prompt(self, conversation_id: str, prompt: str) -> str:
+    def _effective_system_prompt(self, discord_user_id: int | None) -> str:
+        prompt = self._system_prompt
+        if suffix := system_prompt_suffix(discord_user_id=discord_user_id):
+            prompt += suffix
+        return prompt
+
+    def _format_prompt(
+        self,
+        conversation_id: str,
+        prompt: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> str:
         if self._system_sent[conversation_id]:
             return prompt
         self._system_sent[conversation_id] = True
-        return f"{_SYSTEM_PREAMBLE}{self._system_prompt}\n\n{prompt}"
+        return (
+            f"{_SYSTEM_PREAMBLE}{self._effective_system_prompt(discord_user_id)}\n\n{prompt}"
+        )
 
     async def _extract_reply(self, run: AsyncRun) -> str:
         parts: list[str] = []
@@ -142,10 +176,20 @@ class CursorAgent(Agent):
             return reply
         return (await run.text()).strip()
 
-    async def reply(self, conversation_id: str, prompt: str) -> str:
+    async def reply(
+        self,
+        conversation_id: str,
+        prompt: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> str:
         async with self._locks[conversation_id]:
-            agent = await self._get_or_create_agent(conversation_id)
-            message = self._format_prompt(conversation_id, prompt)
+            agent = await self._get_or_create_agent(
+                conversation_id, discord_user_id=discord_user_id
+            )
+            message = self._format_prompt(
+                conversation_id, prompt, discord_user_id=discord_user_id
+            )
             try:
                 run = await agent.send(message)
                 reply_text = await self._extract_reply(run)

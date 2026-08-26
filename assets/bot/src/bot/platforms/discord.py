@@ -73,7 +73,11 @@ class DiscordBot(discord.Client):
 
         try:
             async with reply_channel.typing():
-                reply = await self._agent.reply(conversation_id, agent_prompt)
+                reply = await self._agent.reply(
+                    conversation_id,
+                    agent_prompt,
+                    discord_user_id=message.author.id,
+                )
         except Exception:
             logger.exception("agent error in channel %s", reply_channel.id)
             await self._send_chunks(reply_channel, message, "内部エラーが発生しました。")

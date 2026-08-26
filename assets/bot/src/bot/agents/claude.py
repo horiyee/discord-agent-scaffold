@@ -16,7 +16,8 @@ from claude_agent_sdk import (
 
 from bot.agents.base import Agent
 from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
-from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
+from bot.permissions import admin_user_ids
+from mcp_servers import agent_options, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
 
@@ -169,24 +170,35 @@ class ClaudeAgent(Agent):
         self._system_prompt = system_prompt
         self._allowed_tools = allowed_tools if allowed_tools is not None else parse_allowed_tools()
         self._max_turns = max_turns if max_turns is not None else parse_max_turns()
-        self._mcp_options: dict = agent_options()
-        if self._mcp_options:
-            self._system_prompt += system_prompt_suffix()
-            logger.info("MCP enabled: %s", ", ".join(enabled_servers()))
+        if os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"):
+            logger.info(
+                "GitHub MCP configured; access limited to admin user(s) %s",
+                ", ".join(str(uid) for uid in sorted(admin_user_ids())),
+            )
         # conversation_id -> Claude session_id (resumed on each turn)
         self._sessions: dict[str, str] = {}
         # Serialize turns per conversation so resume doesn't race
         self._locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
-    def _build_options(self, conversation_id: str) -> ClaudeAgentOptions:
+    def _build_options(
+        self,
+        conversation_id: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> ClaudeAgentOptions:
+        mcp_options = agent_options(discord_user_id=discord_user_id)
+        system_prompt = self._system_prompt
+        if suffix := system_prompt_suffix(discord_user_id=discord_user_id):
+            system_prompt += suffix
+
         allowed_tools = list(self._allowed_tools)
         if "Agent" not in allowed_tools:
             allowed_tools.append("Agent")
-        if mcp_allowed := self._mcp_options.get("allowed_tools"):
+        if mcp_allowed := mcp_options.get("allowed_tools"):
             allowed_tools.extend(mcp_allowed)
 
         kwargs: dict = {
-            "system_prompt": self._system_prompt,
+            "system_prompt": system_prompt,
             "resume": self._sessions.get(conversation_id),
             "tools": allowed_tools,
             "allowed_tools": allowed_tools,
@@ -195,13 +207,19 @@ class ClaudeAgent(Agent):
             "permission_mode": "dontAsk",
             "setting_sources": [],
         }
-        if mcp_servers := self._mcp_options.get("mcp_servers"):
+        if mcp_servers := mcp_options.get("mcp_servers"):
             kwargs["mcp_servers"] = mcp_servers
         return ClaudeAgentOptions(**kwargs)
 
-    async def reply(self, conversation_id: str, prompt: str) -> str:
+    async def reply(
+        self,
+        conversation_id: str,
+        prompt: str,
+        *,
+        discord_user_id: int | None = None,
+    ) -> str:
         async with self._locks[conversation_id]:
-            options = self._build_options(conversation_id)
+            options = self._build_options(conversation_id, discord_user_id=discord_user_id)
             parts: list[str] = []
             assistant_error: str | None = None
             final_result: str | None = None

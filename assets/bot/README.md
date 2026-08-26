@@ -70,6 +70,8 @@ uv run bot
 [GitHub MCP サーバー](https://github.com/modelcontextprotocol/servers/tree/main/src/github) の設定を渡し、
 Discord から Issue や PR の確認などができます。
 
+**GitHub MCP は Admin ユーザーのみ利用できます。** Admin は `BOT_ADMIN_USER_IDS`（カンマ区切りの Discord ユーザー ID）で指定します。未設定時の既定は `694443538204721185` です。
+
 トークンは必要なスコープだけ付与してください(読み取り中心なら `repo` や fine-grained token の Read 権限)。
 MCP サーバーは `npx @modelcontextprotocol/server-github` で起動するため、ホストに Node.js が必要です。
 
@@ -107,7 +109,8 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | 変数 | 必須 | 説明 |
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる（Admin のみ利用可） |
+| `BOT_ADMIN_USER_IDS` | — | GitHub MCP を使える Discord ユーザー ID（カンマ区切り。既定: `694443538204721185`） |
 | `CURSOR_API_KEY` | Cursor 利用時 | Cursor API キー（`/model cursor` で切り替え） |
 | `BOT_CURSOR_CWD` | — | Cursor Local ランタイムの作業ディレクトリ（デフォルト: `bot/.cursor-bot-workspace`） |
 | `SAKANA_API_KEY` | Fugu 利用時 | Sakana Fugu API キー（`/model fugu` などで切り替え） |
