@@ -8,6 +8,8 @@ Homelab 上で動く、Claude と対話できるチャットボット。
 
 Claude バックエンドは [Claude Agent SDK](https://pypi.org/project/claude-agent-sdk/) を使い、
 チャンネルごとにセッションを resume して会話を継続します。
+メインエージェントのモデルは Claude Code のアカウント設定に従います（モデル名の環境変数指定は不要）。
+大規模な Web 調査や軽量タスクは、必要なときだけ Sonnet / Haiku のサブエージェントに委譲できます。
 
 ## 必要なもの
 
@@ -57,8 +59,8 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
 | `BOT_AGENT` | — | エージェントバックエンド(デフォルト: `claude`) |
-| `BOT_MODEL` | — | 使用する Claude モデル(デフォルト: `claude-opus-4-6`) |
-| `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch`) |
+| `BOT_ALLOWED_TOOLS` | — | 利用可能なツール(カンマ区切り。デフォルト: `WebSearch,WebFetch,Agent`) |
+| `BOT_MAX_TURNS` | — | 1 回の応答あたりの最大ターン数(デフォルト: `12`) |
 | `BOT_DISCORD_HISTORY_LIMIT` | — | 参照する Discord 履歴の件数(デフォルト: `100`、`0` で無効) |
 | `BOT_REPLY_IN_THREAD` | — | チャンネルでのメンション時にスレッドを作成するか(デフォルト: `true`) |
 

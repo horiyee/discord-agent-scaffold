@@ -6,6 +6,7 @@ import os
 from collections import defaultdict
 
 from claude_agent_sdk import (
+    AgentDefinition,
     AssistantMessage,
     ClaudeAgentOptions,
     ResultMessage,
@@ -18,11 +19,53 @@ from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-opus-4-6"
-DEFAULT_ALLOWED_TOOLS = ("WebSearch", "WebFetch")
+DEFAULT_ALLOWED_TOOLS = ("WebSearch", "WebFetch", "Agent")
+DEFAULT_MAX_TURNS = 12
+DEFAULT_SUBAGENT_MAX_TURNS = 8
+
+_SUBAGENT_FINAL_REPLY_INSTRUCTION = (
+    "作業が終わったら、必ず最後にユーザー向けの要約を日本語のプレーンテキストで書いて終えてください。"
+    "ツール呼び出しだけで終わらせないでください。"
+)
+
+DEFAULT_SUBAGENTS = {
+    "explore": AgentDefinition(
+        description=(
+            "大規模なWeb調査専用。5件以上のソース確認など、"
+            "メインエージェントだけでは手間がかかる調査にだけ使う。"
+        ),
+        prompt=(
+            "あなたは情報収集に特化したサブエージェントです。"
+            "WebSearchとWebFetchを使い、必要な事実を集めてください。"
+            "一次ソースを優先し、結果は簡潔にまとめて返してください。"
+            + _SUBAGENT_FINAL_REPLY_INSTRUCTION
+        ),
+        tools=["WebSearch", "WebFetch"],
+        model="sonnet",
+        maxTurns=DEFAULT_SUBAGENT_MAX_TURNS,
+    ),
+    "quick": AgentDefinition(
+        description=(
+            "簡単な計算、短い要約、フォーマット変換など軽量な作業。"
+            "複雑な調査や深い判断は向かない。"
+        ),
+        prompt=(
+            "あなたは軽量タスク向けのサブエージェントです。"
+            "与えられた作業を手早く正確にこなし、結果だけを返してください。"
+            + _SUBAGENT_FINAL_REPLY_INSTRUCTION
+        ),
+        tools=["WebSearch", "WebFetch"],
+        model="haiku",
+        maxTurns=5,
+    ),
+}
 
 DEFAULT_SYSTEM_PROMPT = (
     "あなたはチャットボットとして動作するアシスタントです。"
+    "通常の質問はWebSearch/WebFetchを自分で使い、毎回サブエージェントに任せないでください。"
+    "5件以上のソース確認など大規模な調査が必要なときだけ、Agentツールのexploreサブエージェントに任せてください。"
+    "単純な計算や短い整形だけならquickサブエージェントを使えます。"
+    "どんな場合も、ユーザーへの最終返答は必ずあなた自身が日本語で書いてください。"
     "簡潔に、チャットに適した長さで日本語で答えてください。"
 )
 
@@ -32,6 +75,13 @@ def parse_allowed_tools() -> list[str]:
     if raw is None:
         return list(DEFAULT_ALLOWED_TOOLS)
     return [tool.strip() for tool in raw.split(",") if tool.strip()]
+
+
+def parse_max_turns() -> int:
+    raw = os.environ.get("BOT_MAX_TURNS")
+    if raw is None:
+        return DEFAULT_MAX_TURNS
+    return max(1, int(raw))
 
 
 _ASSISTANT_ERROR_MESSAGES = {
@@ -110,16 +160,23 @@ def _format_result_error(
     return f"エラーが発生しました: {detail}"
 
 
+def _compose_reply(parts: list[str], final_result: str | None) -> str:
+    text = "\n".join(parts).strip()
+    if not text and final_result:
+        text = final_result.strip()
+    return text
+
+
 class ClaudeAgent(Agent):
     def __init__(
         self,
-        model: str = DEFAULT_MODEL,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         allowed_tools: list[str] | None = None,
+        max_turns: int | None = None,
     ):
-        self._model = model
         self._system_prompt = system_prompt
         self._allowed_tools = allowed_tools if allowed_tools is not None else parse_allowed_tools()
+        self._max_turns = max_turns if max_turns is not None else parse_max_turns()
         self._mcp_options: dict = agent_options()
         if self._mcp_options:
             self._system_prompt += system_prompt_suffix()
@@ -131,15 +188,18 @@ class ClaudeAgent(Agent):
 
     def _build_options(self, conversation_id: str) -> ClaudeAgentOptions:
         allowed_tools = list(self._allowed_tools)
+        if "Agent" not in allowed_tools:
+            allowed_tools.append("Agent")
         if mcp_allowed := self._mcp_options.get("allowed_tools"):
             allowed_tools.extend(mcp_allowed)
 
         kwargs: dict = {
-            "model": self._model,
             "system_prompt": self._system_prompt,
             "resume": self._sessions.get(conversation_id),
-            "tools": self._allowed_tools,
+            "tools": allowed_tools,
             "allowed_tools": allowed_tools,
+            "agents": DEFAULT_SUBAGENTS,
+            "max_turns": self._max_turns,
             "permission_mode": "dontAsk",
             "setting_sources": [],
         }
@@ -152,6 +212,8 @@ class ClaudeAgent(Agent):
             options = self._build_options(conversation_id)
             parts: list[str] = []
             assistant_error: str | None = None
+            final_result: str | None = None
+            result_message: ResultMessage | None = None
             async for message in query(prompt=prompt, options=options):
                 if isinstance(message, AssistantMessage):
                     if message.error:
@@ -160,7 +222,10 @@ class ClaudeAgent(Agent):
                         if isinstance(block, TextBlock):
                             parts.append(block.text)
                 elif isinstance(message, ResultMessage):
+                    result_message = message
                     self._sessions[conversation_id] = message.session_id
+                    if message.result:
+                        final_result = message.result.strip()
                     if message.is_error:
                         error_text = _format_result_error(
                             message, assistant_error=assistant_error
@@ -179,4 +244,15 @@ class ClaudeAgent(Agent):
                             for denial in message.permission_denials
                         )
                         return f"ツールの使用が拒否されました: {denied}"
-            return "\n".join(parts)
+
+            reply_text = _compose_reply(parts, final_result)
+            if not reply_text and result_message is not None:
+                logger.warning(
+                    "Claude agent returned empty reply in conversation %s "
+                    "(turns=%s, cost=%s, usage=%s)",
+                    conversation_id,
+                    result_message.num_turns,
+                    result_message.total_cost_usd,
+                    result_message.usage,
+                )
+            return reply_text
