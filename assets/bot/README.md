@@ -37,8 +37,7 @@ export FUGU_MODEL=fugu-ultra
 [Cursor SDK](https://cursor.com/docs/sdk/python) を使い、Cursor Pro などのサブスク枠内でモデルを利用します。
 `BOT_AGENT=cursor` にすると Cursor のエージェントが応答します。
 
-`BOT_MODEL` を**未設定**にすると、Cursor の既定モデル（Auto 相当）を使います（Auto + Composer プール）。
-特定モデルを使う場合は `BOT_MODEL=composer-2.5` のように指定してください。未設定時は Cloud ランタイム、指定時は Local ランタイムで動作します。
+`BOT_MODEL` を**未設定**にすると、Cursor の既定モデル（Auto 相当）を使います（内部では SDK 要件により `default` を指定し、Cloud ランタイムで動作）。
 
 API キーは [Cursor Dashboard → API Keys](https://cursor.com/dashboard) で作成し、`CURSOR_API_KEY` に設定してください。
 SDK の利用量は IDE / Cloud Agents と同じ月次枠から消費され、Usage ダッシュボードの **SDK** タグで確認できます。
