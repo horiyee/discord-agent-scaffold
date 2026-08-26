@@ -1,3 +1,7 @@
 
 # Cursor local agent workspace
 .cursor-bot-workspace/
+
+# Runtime model selection (persisted by /model)
+.bot-model-state.json
+
