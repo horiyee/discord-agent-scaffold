@@ -15,6 +15,7 @@ from claude_agent_sdk import (
 )
 
 from bot.agents.base import Agent
+from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
 from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
@@ -59,15 +60,6 @@ DEFAULT_SUBAGENTS = {
         maxTurns=5,
     ),
 }
-
-DEFAULT_SYSTEM_PROMPT = (
-    "あなたはチャットボットとして動作するアシスタントです。"
-    "通常の質問はWebSearch/WebFetchを自分で使い、毎回サブエージェントに任せないでください。"
-    "5件以上のソース確認など大規模な調査が必要なときだけ、Agentツールのexploreサブエージェントに任せてください。"
-    "単純な計算や短い整形だけならquickサブエージェントを使えます。"
-    "どんな場合も、ユーザーへの最終返答は必ずあなた自身が日本語で書いてください。"
-    "簡潔に、チャットに適した長さで日本語で答えてください。"
-)
 
 
 def parse_allowed_tools() -> list[str]:
