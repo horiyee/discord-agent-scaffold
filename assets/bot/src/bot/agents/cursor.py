@@ -1,11 +1,13 @@
 """Cursor agent backed by the Cursor SDK."""
 
 import asyncio
+import json
 import logging
 import os
 import secrets
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 import cursor_sdk._store_callback as _store_callback
 import cursor_sdk._tool_callback as _tool_callback
@@ -62,6 +64,64 @@ def _is_bridge_transport_error(exc: Exception) -> bool:
     )
 
 
+def _is_opaque_run_error(result: RunResult, hints: list[str]) -> bool:
+    return (
+        result.status == "error"
+        and not result.result.strip()
+        and not hints
+    )
+
+
+def _string_hint(value: Any) -> str | None:
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped or None
+    return None
+
+
+def _hints_from_result_payload(payload: object) -> list[str]:
+    if not isinstance(payload, dict):
+        return []
+    hints: list[str] = []
+    result_text = _string_hint(payload.get("result"))
+    if result_text:
+        hints.append(result_text)
+    status = str(payload.get("status", "")).lower()
+    if status in {"error", "failed", "cancelled", "expired"}:
+        message = _string_hint(payload.get("message"))
+        if message:
+            hints.append(message)
+    return hints
+
+
+def _collect_error_hints_from_json(value: object, hints: list[str]) -> None:
+    if isinstance(value, dict):
+        status = str(value.get("status", "")).lower()
+        if status in {"error", "failed"}:
+            for key in ("message", "result", "stderr", "text", "error"):
+                text = _string_hint(value.get(key))
+                if text:
+                    hints.append(text)
+        for child in value.values():
+            _collect_error_hints_from_json(child, hints)
+    elif isinstance(value, list):
+        for item in value:
+            _collect_error_hints_from_json(item, hints)
+
+
+def _hints_from_conversation_json(raw: str) -> list[str]:
+    if not raw.strip():
+        return []
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    hints: list[str] = []
+    _collect_error_hints_from_json(data, hints)
+    # Preserve order while dropping duplicates.
+    return list(dict.fromkeys(hints))
+
+
 def parse_cursor_api_key() -> str:
     raw = os.environ.get("CURSOR_API_KEY", "").strip()
     if not raw:
@@ -102,6 +162,11 @@ def _hints_from_stream_message(message: object) -> list[str]:
         if result:
             return [f"{name}: {result}"]
         return [f"{name} failed"]
+    if msg_type == "task":
+        status = str(getattr(message, "status", "")).lower()
+        text = str(getattr(message, "text", "")).strip()
+        if status in {"error", "failed"} and text:
+            return [text]
     return []
 
 
@@ -109,14 +174,15 @@ def _format_run_error(result: RunResult, hints: list[str]) -> str:
     """Build a user-facing error string from a failed run."""
     detail = result.result.strip()
     if not detail and hints:
-        detail = "; ".join(hints)
+        detail = "; ".join(dict.fromkeys(hints))
     if not detail:
         if result.status in {"cancelled", "expired"}:
             detail = result.status
         elif result.id:
             detail = (
-                f"原因を特定できませんでした (run_id={result.id})。"
-                "サーバーログまたは Cursor Dashboard の Usage を確認してください。"
+                f"Cursor の実行が失敗しました (run_id={result.id})。"
+                "bridge が詳細を返さなかった可能性があります。"
+                "サーバーで CURSOR_SDK_LOG=debug を有効にするか、bot を再起動してください。"
             )
         else:
             detail = "unknown error"
@@ -231,7 +297,12 @@ class CursorAgent(Agent):
     async def _collect_run_output(self, run: AsyncRun) -> tuple[str, list[str]]:
         parts: list[str] = []
         hints: list[str] = []
-        async for message in run.stream():
+        async for event in run.events():
+            if event.result is not None:
+                hints.extend(_hints_from_result_payload(event.result))
+            message = event.sdk_message
+            if message is None:
+                continue
             msg_type = getattr(message, "type", "")
             if msg_type == "assistant":
                 content = getattr(getattr(message, "message", None), "content", ())
@@ -244,7 +315,23 @@ class CursorAgent(Agent):
         reply = "".join(parts).strip()
         if not reply:
             reply = (await run.text()).strip()
-        return reply, hints
+        return reply, list(dict.fromkeys(hints))
+
+    async def _fetch_run_error_hints(self, run: AsyncRun) -> list[str]:
+        try:
+            raw = await run.conversation_json()
+        except Exception:
+            logger.exception("failed to fetch conversation_json for run %s", run.id)
+            return []
+        hints = _hints_from_conversation_json(raw)
+        if raw.strip():
+            logger.debug(
+                "conversation_json for failed run %s (len=%d): %s",
+                run.id,
+                len(raw),
+                raw[:2000],
+            )
+        return hints
 
     async def reply(self, conversation_id: str, prompt: str) -> str:
         async with self._locks[conversation_id]:
@@ -276,14 +363,29 @@ class CursorAgent(Agent):
                     return error_text
 
                 if result.status == "error":
-                    error_text = _format_run_error(result, stream_hints)
+                    error_hints = list(stream_hints)
+                    error_hints.extend(await self._fetch_run_error_hints(run))
+                    error_hints = list(dict.fromkeys(error_hints))
+                    if attempt == 0 and _is_opaque_run_error(result, error_hints):
+                        logger.warning(
+                            "Cursor run failed without details in conversation %s "
+                            "(run_id=%s, duration_ms=%s); resetting bridge and retrying once",
+                            conversation_id,
+                            result.id,
+                            result.duration_ms,
+                        )
+                        await self._reset_bridge()
+                        message = self._format_prompt(conversation_id, prompt)
+                        continue
+                    error_text = _format_run_error(result, error_hints)
                     logger.error(
                         "Cursor agent run failed in conversation %s "
-                        "(run_id=%s, model=%s, stream_hints=%s): %s",
+                        "(run_id=%s, model=%s, duration_ms=%s, stream_hints=%s): %s",
                         conversation_id,
                         result.id,
                         result.model.id if result.model else self._model or "default",
-                        stream_hints or None,
+                        result.duration_ms,
+                        error_hints or None,
                         error_text,
                     )
                     return error_text
