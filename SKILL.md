@@ -32,10 +32,10 @@ Discord や Claude の配線をゼロから書き直さない。
 | トリガー | ギルドは初回 `@mention`（スレ内はメンション不要）または DM |
 | スレッド | テキストチャンネルでのメンションからスレッドを作成し、その中に返信 |
 | コンテキスト | 直近履歴＋リプライチェーン＋関連スレ。発言者の表示名をプロンプトに含める |
-| Agent | `BOT_AGENT` で Claude / Cursor / Sakana Fugu。認証／利用上限エラーは日本語で返す |
+| Agent | `AgentRouter` + Discord `/model` で Claude / Cursor / Sakana Fugu を切替。認証／利用上限エラーは日本語で返す |
 | ツール | Claude: `WebSearch` / `WebFetch` / `Agent`。Cursor: SDK エージェント。Fugu: `web_search` |
 | MCP | Claude / Cursor 利用時、`GITHUB_PERSONAL_ACCESS_TOKEN` で GitHub MCP |
-| モデル | Claude はアカウント設定。Cursor は `BOT_MODEL`（未設定なら Auto）。Fugu は `FUGU_MODEL` |
+| モデル | `/model` で切替（状態は `.bot-model-state.json`）。Claude はアカウント設定。Cursor / Fugu はプリセットまたは明示指定 |
 
 ## 手順
 

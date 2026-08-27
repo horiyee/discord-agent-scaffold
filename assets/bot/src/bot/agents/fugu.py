@@ -58,7 +58,7 @@ def parse_fugu_base_url() -> str:
 def parse_sakana_api_key() -> str:
     raw = os.environ.get("SAKANA_API_KEY", "").strip()
     if not raw:
-        raise ValueError("SAKANA_API_KEY is required when BOT_AGENT=fugu")
+        raise ValueError("SAKANA_API_KEY is required for the Fugu backend")
     return raw
 
 

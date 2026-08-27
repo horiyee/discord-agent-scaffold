@@ -31,7 +31,7 @@ _SYSTEM_PREAMBLE = "[システム指示]\n"
 def parse_cursor_api_key() -> str:
     raw = os.environ.get("CURSOR_API_KEY", "").strip()
     if not raw:
-        raise ValueError("CURSOR_API_KEY is required when BOT_AGENT=cursor")
+        raise ValueError("CURSOR_API_KEY is required for the Cursor backend")
     return raw
 
 

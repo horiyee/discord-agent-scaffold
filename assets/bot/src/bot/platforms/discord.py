@@ -11,6 +11,11 @@ import re
 import discord
 
 from bot.agents.base import Agent
+from bot.agents.router import AgentRouter
+from bot.model_selection import (
+    handle_model_command,
+    parse_model_command,
+)
 from bot.platforms.discord_history import build_discord_context
 
 logger = logging.getLogger(__name__)
@@ -35,6 +40,7 @@ class DiscordBot(discord.Client):
         super().__init__(intents=intents)
         self._agent = agent
         self._reply_in_thread = _env_bool("BOT_REPLY_IN_THREAD", True)
+        self._model_store = agent.store if isinstance(agent, AgentRouter) else None
 
     async def on_ready(self) -> None:
         logger.info("logged in as %s", self.user)
@@ -53,6 +59,13 @@ class DiscordBot(discord.Client):
 
         reply_channel = await self._resolve_reply_channel(message)
         conversation_id = str(reply_channel.id)
+
+        model_command = parse_model_command(prompt)
+        if model_command is not None and self._model_store is not None:
+            _, args = model_command
+            reply = handle_model_command(args, self._model_store, conversation_id)
+            await self._send_chunks(reply_channel, message, reply)
+            return
 
         history = await build_discord_context(message, bot_user_id=self.user.id)
         user_prompt = self._format_user_prompt(message, prompt)
