@@ -13,7 +13,7 @@ assets/bot/
     ├── bot/
     │   ├── __init__.py          # 入口: DISCORD_BOT_TOKEN → AgentRouter
     │   ├── model_selection.py   # /model コマンド・永続化
-    │   ├── permissions.py       # GitHub MCP 利用ユーザーの任意制限
+    │   ├── permissions.py       # Owner（特権機能の任意制限）
     │   ├── agents/
     │   │   ├── base.py          # Agent ABC
     │   │   ├── prompts.py       # 共有システムプロンプト（味付け）
@@ -43,7 +43,7 @@ assets/bot/
 
 - 必須: `DISCORD_BOT_TOKEN`
 - 任意: `BOT_ALLOWED_TOOLS`、`BOT_MAX_TURNS`、`BOT_DISCORD_HISTORY_LIMIT`、
-  `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`、`BOT_GITHUB_MCP_USER_IDS`、
+  `BOT_REPLY_IN_THREAD`、`GITHUB_PERSONAL_ACCESS_TOKEN`、`BOT_OWNER_USER_IDS`、
   `CURSOR_API_KEY` / `BOT_CURSOR_CWD`（Cursor 時）、
   `SAKANA_API_KEY` / `FUGU_BASE_URL` / `BOT_FUGU_WEB_SEARCH`（Fugu 時）、
   `BOT_MODEL_SWITCHING` / `BOT_MODEL_STATE_FILE`（`/model`）

@@ -1,20 +1,21 @@
-"""Access checks for optional privileged capabilities."""
+"""Owner checks for privileged bot capabilities.
+
+Personal bots usually only need Owner vs everyone else. Set
+``BOT_OWNER_USER_IDS`` to your Discord snowflake(s). Privileged features
+(currently GitHub MCP) are limited to owners when that list is set; leave it
+unset to keep those features open to all users.
+"""
 
 from __future__ import annotations
 
 import os
 
 
-def github_mcp_allowed_user_ids() -> frozenset[int] | None:
-    """Return Discord user IDs allowed to use GitHub MCP, or None if unrestricted.
-
-    Set ``BOT_GITHUB_MCP_USER_IDS`` to a comma-separated list of snowflakes to
-    restrict access. Leave unset (or empty) to allow any user when a token is
-    configured.
-    """
-    raw = os.environ.get("BOT_GITHUB_MCP_USER_IDS")
+def owner_user_ids() -> frozenset[int]:
+    """Return configured owner Discord user IDs (empty if unrestricted)."""
+    raw = os.environ.get("BOT_OWNER_USER_IDS")
     if raw is None or not raw.strip():
-        return None
+        return frozenset()
     ids: set[int] = set()
     for part in raw.replace(";", ",").split(","):
         part = part.strip()
@@ -24,10 +25,18 @@ def github_mcp_allowed_user_ids() -> frozenset[int] | None:
     return frozenset(ids)
 
 
-def can_use_github_mcp(discord_user_id: int | None) -> bool:
-    allowed = github_mcp_allowed_user_ids()
-    if allowed is None:
-        return True
+def is_owner(discord_user_id: int | None) -> bool:
     if discord_user_id is None:
         return False
-    return discord_user_id in allowed
+    owners = owner_user_ids()
+    if not owners:
+        return False
+    return discord_user_id in owners
+
+
+def can_use_github_mcp(discord_user_id: int | None) -> bool:
+    """GitHub MCP is owner-only when owners are configured; otherwise open."""
+    owners = owner_user_ids()
+    if not owners:
+        return True
+    return is_owner(discord_user_id)

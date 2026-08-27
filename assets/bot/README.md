@@ -70,8 +70,8 @@ uv run bot
 [GitHub MCP サーバー](https://github.com/modelcontextprotocol/servers/tree/main/src/github) の設定を渡し、
 Discord から Issue や PR の確認などができます。
 
-既定ではトークンを設定したユーザーなら誰でも GitHub MCP を使えます。
-特定の Discord ユーザーだけに制限したい場合は `BOT_GITHUB_MCP_USER_IDS`（カンマ区切りのユーザー ID）を設定してください。
+既定ではトークンを設定すれば誰でも GitHub MCP を使えます。
+個人 bot で自分だけに限定したい場合は `BOT_OWNER_USER_IDS`（カンマ区切りの Discord ユーザー ID）を設定してください。Owner 以外は通常の会話はできますが、GitHub MCP は使えません。
 
 トークンは必要なスコープだけ付与してください(読み取り中心なら `repo` や fine-grained token の Read 権限)。
 MCP サーバーは `npx @modelcontextprotocol/server-github` で起動するため、ホストに Node.js が必要です。
@@ -111,7 +111,7 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | --- | --- | --- |
 | `DISCORD_BOT_TOKEN` | ✅ | Discord ボットのトークン |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | — | GitHub Personal Access Token。設定すると GitHub MCP が有効になる |
-| `BOT_GITHUB_MCP_USER_IDS` | — | GitHub MCP を使える Discord ユーザー ID（カンマ区切り）。未設定なら制限なし |
+| `BOT_OWNER_USER_IDS` | — | bot Owner の Discord ユーザー ID（カンマ区切り）。設定時は GitHub MCP など特権機能を Owner のみに制限。未設定なら制限なし |
 | `CURSOR_API_KEY` | Cursor 利用時 | Cursor API キー（`/model cursor` で切り替え） |
 | `BOT_CURSOR_CWD` | — | Cursor Local ランタイムの作業ディレクトリ（デフォルト: `bot/.cursor-bot-workspace`） |
 | `SAKANA_API_KEY` | Fugu 利用時 | Sakana Fugu API キー（`/model fugu` などで切り替え） |

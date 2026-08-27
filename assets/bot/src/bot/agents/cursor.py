@@ -19,7 +19,7 @@ from cursor_sdk.asyncio import AsyncAgent, AsyncRun
 
 from bot.agents.base import Agent
 from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
-from bot.permissions import github_mcp_allowed_user_ids
+from bot.permissions import owner_user_ids
 from mcp_servers import agent_options, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
@@ -80,13 +80,13 @@ class CursorAgent(Agent):
         self._model = model if model is not None else parse_cursor_model()
         self._api_key = api_key if api_key is not None else parse_cursor_api_key()
         if os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"):
-            allowed = github_mcp_allowed_user_ids()
-            if allowed is None:
+            owners = owner_user_ids()
+            if not owners:
                 logger.info("GitHub MCP configured (available to all users)")
             else:
                 logger.info(
-                    "GitHub MCP configured; restricted to user id(s) %s",
-                    ", ".join(str(uid) for uid in sorted(allowed)),
+                    "GitHub MCP configured; restricted to owner user id(s) %s",
+                    ", ".join(str(uid) for uid in sorted(owners)),
                 )
         self._client: AsyncClient | None = None
         self._client_lock = asyncio.Lock()
