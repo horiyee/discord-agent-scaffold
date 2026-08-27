@@ -3,9 +3,12 @@
 import asyncio
 import logging
 import os
+import secrets
 from collections import defaultdict
 from pathlib import Path
 
+import cursor_sdk._store_callback as _store_callback
+import cursor_sdk._tool_callback as _tool_callback
 from cursor_sdk import (
     AgentOptions,
     AsyncClient,
@@ -13,6 +16,7 @@ from cursor_sdk import (
     CloudAgentOptions,
     CursorAgentError,
     LocalAgentOptions,
+    NetworkError,
     RateLimitError,
     RunResult,
 )
@@ -27,6 +31,35 @@ logger = logging.getLogger(__name__)
 DEFAULT_CWD = Path(__file__).resolve().parents[3] / ".cursor-bot-workspace"
 DEFAULT_MODEL = "default"
 _SYSTEM_PREAMBLE = "[システム指示]\n"
+_BRIDGE_TOKEN_WORKAROUND_APPLIED = False
+
+
+def _apply_bridge_token_workaround() -> None:
+    """Avoid cursor-sdk bridge CLI failures when auth tokens start with '-'."""
+    global _BRIDGE_TOKEN_WORKAROUND_APPLIED
+    if _BRIDGE_TOKEN_WORKAROUND_APPLIED:
+        return
+
+    def _safe_auth_token() -> str:
+        token = secrets.token_urlsafe(32)
+        while token.startswith("-"):
+            token = secrets.token_urlsafe(32)
+        return token
+
+    _tool_callback._new_auth_token = _safe_auth_token
+    _store_callback._new_auth_token = _safe_auth_token
+    _BRIDGE_TOKEN_WORKAROUND_APPLIED = True
+
+
+def _is_bridge_transport_error(exc: Exception) -> bool:
+    if isinstance(exc, NetworkError) and exc.is_retryable:
+        return True
+    lowered = str(exc).lower()
+    return "bridge request failed" in lowered and (
+        "remoteprotocolerror" in lowered
+        or "incomplete chunked" in lowered
+        or "peer closed connection" in lowered
+    )
 
 
 def parse_cursor_api_key() -> str:
@@ -102,6 +135,13 @@ def _format_api_error(exc: Exception) -> str:
         )
     if isinstance(exc, RateLimitError):
         return "Cursor の利用上限に達しました。しばらく待ってから再度お試しください。"
+    if isinstance(exc, NetworkError) or _is_bridge_transport_error(exc):
+        detail = exc.message.strip() if isinstance(exc, CursorAgentError) else str(exc)
+        return (
+            "Cursor SDK の bridge との通信が途中で切れました。"
+            "bot の再起動、またはしばらく待ってから再度お試しください。"
+            f" ({detail})"
+        )
     if isinstance(exc, CursorAgentError):
         detail = exc.message.strip() or str(exc)
         lowered = detail.lower()
@@ -134,10 +174,22 @@ class CursorAgent(Agent):
     async def _ensure_client(self) -> AsyncClient:
         async with self._client_lock:
             if self._client is None:
+                _apply_bridge_token_workaround()
                 self._client = await AsyncClient.launch_bridge(
                     workspace=parse_cursor_cwd(),
                 )
             return self._client
+
+    async def _reset_bridge(self) -> None:
+        async with self._client_lock:
+            if self._client is not None:
+                try:
+                    await self._client.aclose()
+                except Exception:
+                    logger.exception("failed to close cursor bridge client")
+                self._client = None
+            self._agents.clear()
+            self._system_sent.clear()
 
     def _build_create_options(self, conversation_id: str) -> AgentOptions:
         mcp_servers = self._mcp_options.get("mcp_servers")
@@ -196,39 +248,55 @@ class CursorAgent(Agent):
 
     async def reply(self, conversation_id: str, prompt: str) -> str:
         async with self._locks[conversation_id]:
-            agent = await self._get_or_create_agent(conversation_id)
             message = self._format_prompt(conversation_id, prompt)
-            try:
-                run = await agent.send(message)
-                reply_text, stream_hints = await self._collect_run_output(run)
-                result = await run.wait()
-            except Exception as exc:
-                error_text = _format_api_error(exc)
-                logger.error(
-                    "Cursor agent error in conversation %s: %s",
-                    conversation_id,
-                    error_text,
-                    exc_info=exc,
-                )
-                return error_text
+            for attempt in range(2):
+                agent = await self._get_or_create_agent(conversation_id)
+                try:
+                    run = await agent.send(message)
+                    reply_text, stream_hints = await self._collect_run_output(run)
+                    result = await run.wait()
+                except Exception as exc:
+                    if attempt == 0 and _is_bridge_transport_error(exc):
+                        logger.warning(
+                            "Cursor bridge transport error in conversation %s; "
+                            "resetting bridge and retrying once",
+                            conversation_id,
+                            exc_info=exc,
+                        )
+                        await self._reset_bridge()
+                        message = self._format_prompt(conversation_id, prompt)
+                        continue
+                    error_text = _format_api_error(exc)
+                    logger.error(
+                        "Cursor agent error in conversation %s: %s",
+                        conversation_id,
+                        error_text,
+                        exc_info=exc,
+                    )
+                    return error_text
 
-            if result.status == "error":
-                error_text = _format_run_error(result, stream_hints)
-                logger.error(
-                    "Cursor agent run failed in conversation %s "
-                    "(run_id=%s, model=%s, stream_hints=%s): %s",
-                    conversation_id,
-                    result.id,
-                    result.model.id if result.model else self._model or "default",
-                    stream_hints or None,
-                    error_text,
-                )
-                return error_text
+                if result.status == "error":
+                    error_text = _format_run_error(result, stream_hints)
+                    logger.error(
+                        "Cursor agent run failed in conversation %s "
+                        "(run_id=%s, model=%s, stream_hints=%s): %s",
+                        conversation_id,
+                        result.id,
+                        result.model.id if result.model else self._model or "default",
+                        stream_hints or None,
+                        error_text,
+                    )
+                    return error_text
 
-            if not reply_text:
-                logger.warning(
-                    "Cursor agent returned empty reply in conversation %s (model=%s)",
-                    conversation_id,
-                    result.model.id if result.model else self._model or "default",
-                )
-            return reply_text
+                if not reply_text:
+                    logger.warning(
+                        "Cursor agent returned empty reply in conversation %s (model=%s)",
+                        conversation_id,
+                        result.model.id if result.model else self._model or "default",
+                    )
+                return reply_text
+
+            return (
+                "Cursor SDK の bridge との通信が途中で切れました。"
+                "bot の再起動、またはしばらく待ってから再度お試しください。"
+            )
