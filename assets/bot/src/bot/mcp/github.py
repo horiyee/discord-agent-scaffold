@@ -1,4 +1,4 @@
-"""GitHub MCP server configuration."""
+"""GitHub MCP server configuration (standard integration)."""
 
 import os
 
@@ -7,13 +7,23 @@ NPM_PACKAGE = "@modelcontextprotocol/server-github"
 MCP_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
 
+def name() -> str:
+    return SERVER_NAME
+
+
 def token() -> str | None:
     """Return a GitHub token from the environment, if configured."""
     return os.environ.get(MCP_TOKEN_ENV)
 
 
-def options(token_value: str) -> dict:
-    """Build ClaudeAgentOptions kwargs for the GitHub MCP server."""
+def enabled() -> bool:
+    return token() is not None
+
+
+def agent_options() -> dict:
+    """Build agent kwargs for the GitHub MCP server."""
+    if not (token_value := token()):
+        return {}
     return {
         "mcp_servers": {
             SERVER_NAME: {

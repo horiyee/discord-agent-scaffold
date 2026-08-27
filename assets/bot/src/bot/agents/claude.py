@@ -16,7 +16,7 @@ from claude_agent_sdk import (
 
 from bot.agents.base import Agent
 from bot.agents.prompts import DEFAULT_SYSTEM_PROMPT
-from mcp_servers import agent_options, enabled_servers, system_prompt_suffix
+from bot.mcp import agent_options, enabled_servers, system_prompt_suffix
 
 logger = logging.getLogger(__name__)
 
