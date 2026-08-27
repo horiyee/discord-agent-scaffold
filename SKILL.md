@@ -58,7 +58,7 @@ assets/bot/  →  <destination>/bot/
 cp -R assets/bot <destination>/bot
 ```
 
-`pyproject.toml`、`uv.lock`、`.python-version`、`src/bot/**`、`src/mcp_servers/**`、
+`pyproject.toml`、`uv.lock`、`.python-version`、`src/bot/**`、`src/bot/mcp/**`、
 テンプレート README は残す。
 
 ### 3. 味付けを適用する

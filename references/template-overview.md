@@ -10,24 +10,24 @@ assets/bot/
 ├── uv.lock
 ├── README.md
 └── src/
-    ├── bot/
-    │   ├── __init__.py          # 入口: DISCORD_BOT_TOKEN → AgentRouter
-    │   ├── model_selection.py   # /model コマンド・永続化
-    │   ├── agents/
-    │   │   ├── base.py          # Agent ABC
-    │   │   ├── prompts.py       # 共有システムプロンプト（味付け）
-    │   │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
-    │   │   ├── cursor.py        # Cursor SDK
-    │   │   ├── fugu.py          # Sakana Fugu（OpenAI Responses API）
-    │   │   ├── factory.py       # create_agent（claude / cursor / fugu）
-    │   │   ├── router.py        # AgentRouter（会話ごとのバックエンド選択）
-    │   │   └── __init__.py
-    │   └── platforms/
-    │       ├── discord.py       # メンション/DM、スレッド、/model、分割送信
-    │       └── discord_history.py
-    └── mcp_servers/
-        ├── __init__.py
-        └── github.py            # 任意の GitHub MCP
+    └── bot/
+        ├── __init__.py          # 入口: DISCORD_BOT_TOKEN → AgentRouter
+        ├── model_selection.py   # /model コマンド・永続化
+        ├── agents/
+        │   ├── base.py          # Agent ABC
+        │   ├── prompts.py       # 共有システムプロンプト（味付け）
+        │   ├── claude.py        # Claude Agent SDK + ツール + サブエージェント + MCP
+        │   ├── cursor.py        # Cursor SDK
+        │   ├── fugu.py          # Sakana Fugu（OpenAI Responses API）
+        │   ├── factory.py       # create_agent（claude / cursor / fugu）
+        │   ├── router.py        # AgentRouter（会話ごとのバックエンド選択）
+        │   └── __init__.py
+        ├── mcp/
+        │   ├── __init__.py      # 標準 MCP の集約
+        │   └── github.py        # 任意の GitHub MCP
+        └── platforms/
+            ├── discord.py       # メンション/DM、スレッド、/model、分割送信
+            └── discord_history.py
 ```
 
 ## 味付け vs コア
@@ -36,7 +36,7 @@ assets/bot/
 | --- | --- |
 | `agents/prompts.py` の `DEFAULT_SYSTEM_PROMPT` | セッション resume、ロック、ツール/MCP 組み立て |
 | `platforms/discord.py` の `DEFAULT_THREAD_NAME` | スレ作成・reply reference、履歴取得、`/model` |
-| bot README の説明 / `pyproject` のメタデータ | `mcp_servers` の配線、`model_selection` / `AgentRouter` |
+| bot README の説明 / `pyproject` のメタデータ | `bot.mcp` の配線、`model_selection` / `AgentRouter` |
 
 ## 環境変数（詳細は `assets/bot/README.md`）
 

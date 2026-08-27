@@ -4,7 +4,7 @@ LLM と対話できる Discord チャットボットのテンプレート。
 
 - `bot.agents` — LLM バックエンドの抽象化(現在: Claude / Cursor / Sakana Fugu)
 - `bot.platforms` — チャットプラットフォーム(現在: Discord / 将来: Slack など)
-- `mcp_servers` — MCP サーバー設定(`src/mcp_servers`)。Claude / Cursor バックエンドで利用
+- `bot.mcp` — 標準 MCP 連携（GitHub など）。Claude / Cursor バックエンドが利用
 
 ## バックエンド
 
@@ -66,7 +66,7 @@ uv run bot
 
 ## GitHub 連携
 
-`GITHUB_PERSONAL_ACCESS_TOKEN` を設定すると、`mcp_servers` が
+`GITHUB_PERSONAL_ACCESS_TOKEN` を設定すると、`bot.mcp` が
 [GitHub MCP サーバー](https://github.com/modelcontextprotocol/servers/tree/main/src/github) の設定を渡し、
 Discord から Issue や PR の確認などができます。
 
@@ -121,3 +121,13 @@ Developer Portal で **Create Public Threads** と **Send Messages in Threads** 
 | `BOT_MODEL_STATE_FILE` | — | モデル選択の保存先（デフォルト: `bot/.bot-model-state.json`） |
 
 Web 検索・取得にはネットワーク接続が必要です。Claude 利用時は Anthropic API の認証も必要です。Cursor 利用時は Cursor サブスクの利用枠から消費されます。`WebSearch` は追加料金が発生する場合があります。Fugu 利用時は Sakana の料金体系に従います。
+
+
+## 拡張のヒント
+
+設計方針: **`src/bot/` は本体**、**`src/` 直下の兄弟パッケージは環境拡張**（デプロイ先固有の連携）。
+
+- **新しい LLM バックエンド** — `bot.agents.base.Agent` を実装し、`bot.agents.create_agent()` に登録する
+- **新しいチャットプラットフォーム** — `bot.platforms` にアダプタを追加し、`bot/__init__.py` の `main()` から起動する
+- **新しい標準 MCP** — `bot/mcp/` にモジュールを追加し、`bot/mcp/__init__.py` で有効化条件を定義する
+- **環境拡張** — 必要になったら `src/<env>_<name>/` にパッケージを足す（現時点では未実装）

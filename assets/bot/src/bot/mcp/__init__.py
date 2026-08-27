@@ -1,26 +1,26 @@
-"""MCP server configurations aggregated from environment."""
+"""MCP server configurations bundled with the bot."""
 
-from mcp_servers import github
+from bot.mcp import github
 
 __all__ = ["agent_options", "enabled_servers", "system_prompt_suffix"]
 
 
 def enabled_servers() -> list[str]:
     servers: list[str] = []
-    if github.token():
-        servers.append(github.SERVER_NAME)
+    if github.enabled():
+        servers.append(github.name())
     return servers
 
 
 def agent_options() -> dict:
-    """Return MCP server kwargs for all enabled backends (Claude / Cursor)."""
+    """Return MCP server kwargs for all enabled providers."""
     mcp_servers: dict = {}
     allowed_tools: list[str] = []
 
-    if token := github.token():
-        opts = github.options(token)
-        mcp_servers.update(opts["mcp_servers"])
-        allowed_tools.extend(opts["allowed_tools"])
+    if github.enabled():
+        opts = github.agent_options()
+        mcp_servers.update(opts.get("mcp_servers", {}))
+        allowed_tools.extend(opts.get("allowed_tools", []))
 
     if not mcp_servers:
         return {}
@@ -30,6 +30,6 @@ def agent_options() -> dict:
 
 def system_prompt_suffix() -> str:
     parts: list[str] = []
-    if github.token():
+    if github.enabled():
         parts.append(github.system_prompt_suffix())
     return "".join(parts)
