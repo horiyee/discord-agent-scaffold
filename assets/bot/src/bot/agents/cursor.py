@@ -14,6 +14,7 @@ from cursor_sdk import (
     CursorAgentError,
     LocalAgentOptions,
     RateLimitError,
+    RunResult,
 )
 from cursor_sdk.asyncio import AsyncAgent, AsyncRun
 
@@ -49,6 +50,48 @@ def parse_cursor_cwd() -> str:
         return raw.strip()
     DEFAULT_CWD.mkdir(parents=True, exist_ok=True)
     return str(DEFAULT_CWD)
+
+
+def _hints_from_stream_message(message: object) -> list[str]:
+    """Collect user-facing error hints from one SDK stream message."""
+    msg_type = getattr(message, "type", "")
+    if msg_type == "status":
+        status = str(getattr(message, "status", "")).lower()
+        text = str(getattr(message, "message", "")).strip()
+        if status in {"error", "failed", "cancelled", "expired"} and text:
+            return [text]
+        if text and status not in {"", "running", "finished"}:
+            return [text]
+        return []
+    if msg_type == "tool_call" and str(getattr(message, "status", "")).lower() == "error":
+        name = str(getattr(message, "name", "tool"))
+        result = getattr(message, "result", None)
+        if result:
+            return [f"{name}: {result}"]
+        return [f"{name} failed"]
+    return []
+
+
+def _format_run_error(result: RunResult, hints: list[str]) -> str:
+    """Build a user-facing error string from a failed run."""
+    detail = result.result.strip()
+    if not detail and hints:
+        detail = "; ".join(hints)
+    if not detail:
+        if result.status in {"cancelled", "expired"}:
+            detail = result.status
+        elif result.id:
+            detail = (
+                f"原因を特定できませんでした (run_id={result.id})。"
+                "サーバーログまたは Cursor Dashboard の Usage を確認してください。"
+            )
+        else:
+            detail = "unknown error"
+
+    lowered = detail.lower()
+    if "usage limit" in lowered or "rate limit" in lowered:
+        return f"Cursor の利用上限に達しました: {detail}"
+    return f"エラーが発生しました: {detail}"
 
 
 def _format_api_error(exc: Exception) -> str:
@@ -133,14 +176,23 @@ class CursorAgent(Agent):
         self._system_sent[conversation_id] = True
         return f"{_SYSTEM_PREAMBLE}{self._system_prompt}\n\n{prompt}"
 
-    async def _extract_reply(self, run: AsyncRun) -> str:
+    async def _collect_run_output(self, run: AsyncRun) -> tuple[str, list[str]]:
         parts: list[str] = []
-        async for chunk in run.iter_text():
-            parts.append(chunk)
+        hints: list[str] = []
+        async for message in run.stream():
+            msg_type = getattr(message, "type", "")
+            if msg_type == "assistant":
+                content = getattr(getattr(message, "message", None), "content", ())
+                for block in content:
+                    text = getattr(block, "text", "")
+                    if text:
+                        parts.append(text)
+            else:
+                hints.extend(_hints_from_stream_message(message))
         reply = "".join(parts).strip()
-        if reply:
-            return reply
-        return (await run.text()).strip()
+        if not reply:
+            reply = (await run.text()).strip()
+        return reply, hints
 
     async def reply(self, conversation_id: str, prompt: str) -> str:
         async with self._locks[conversation_id]:
@@ -148,7 +200,7 @@ class CursorAgent(Agent):
             message = self._format_prompt(conversation_id, prompt)
             try:
                 run = await agent.send(message)
-                reply_text = await self._extract_reply(run)
+                reply_text, stream_hints = await self._collect_run_output(run)
                 result = await run.wait()
             except Exception as exc:
                 error_text = _format_api_error(exc)
@@ -161,11 +213,14 @@ class CursorAgent(Agent):
                 return error_text
 
             if result.status == "error":
-                detail = result.result.strip() or "unknown error"
-                error_text = f"エラーが発生しました: {detail}"
+                error_text = _format_run_error(result, stream_hints)
                 logger.error(
-                    "Cursor agent run failed in conversation %s: %s",
+                    "Cursor agent run failed in conversation %s "
+                    "(run_id=%s, model=%s, stream_hints=%s): %s",
                     conversation_id,
+                    result.id,
+                    result.model.id if result.model else self._model or "default",
+                    stream_hints or None,
                     error_text,
                 )
                 return error_text
